@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Payslip</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+        }
+
+        /* 🔵 FIXED: COMPLETE OUTER BORDER (blue-marked missing line restored) */
+        .wrapper {
+            width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #000;   /* COMPLETE BORDER */
+            box-sizing: border-box;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-section img {
+            width: 120px;
+            height: auto;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+            text-decoration: underline;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 4px 0;
+        }
+
+        .section-title {
+            margin-top: 20px;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        .summary-table td {
+            border: 1px solid #000;
+            padding: 6px;
+        }
+
+        .footer {
+            text-align: left;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+    <div class="header-section">
+        <img src="logo.png" alt="Company Logo">
+        <div class="title">PAYSLIP FOR ${month} ${year}</div>
+    </div>
+
+    <table>
+        <tr><td><strong>Employee Name:</strong></td><td>${employeeName}</td></tr>
+        <tr><td><strong>Employee ID:</strong></td><td>${employeeId}</td></tr>
+        <tr><td><strong>Department:</strong></td><td>${department}</td></tr>
+        <tr><td><strong>Designation:</strong></td><td>${designation}</td></tr>
+    </table>
+
+    <div class="section-title">Earnings</div>
+    <table class="summary-table">
+        <tr><td>Basic</td><td>${basic}</td></tr>
+        <tr><td>HRA</td><td>${hra}</td></tr>
+        <tr><td>Allowance</td><td>${allowance}</td></tr>
+        <tr><td><strong>Total Earnings</strong></td><td><strong>${totalEarnings}</strong></td></tr>
+    </table>
+
+    <div class="section-title">Deductions</div>
+    <table class="summary-table">
+        <tr><td>PF</td><td>${pf}</td></tr>
+        <tr><td>Professional Tax</td><td>${pt}</td></tr>
+        <tr><td><strong>Total Deductions</strong></td><td><strong>${totalDeductions}</strong></td></tr>
+    </table>
+
+    <div class="section-title">Net Salary</div>
+    <table class="summary-table">
+        <tr><td><strong>Net Pay</strong></td><td><strong>${netPay}</strong></td></tr>
+    </table>
+
+    <div class="footer">
+        <p><strong>Note:</strong> This is a system-generated payslip and does not require a signature.</p>
+    </div>
+
+</div>
+
+</body>
+</html>
