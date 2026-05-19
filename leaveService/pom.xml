@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Spring Boot Parent -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -11,59 +14,54 @@
         <relativePath/>
     </parent>
 
+    <!-- Project Details -->
     <groupId>com.configserver.hrm</groupId>
     <artifactId>leaveService</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>leaveService</name>
 
+    <!-- Java Version -->
     <properties>
-        <java.version>23</java.version>
-        <spring-cloud.version>2022.0.4</spring-cloud.version>
-        <maven.compiler.source>23</maven.compiler.source>
-        <maven.compiler.target>23</maven.compiler.target>
+        <java.version>17</java.version>
     </properties>
-
-    <!-- Spring Cloud Dependency Management -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <!-- Repositories -->
     <repositories>
+
         <repository>
             <id>central</id>
-            <name>Central Repository</name>
+            <name>Maven Central</name>
             <url>https://repo.maven.apache.org/maven2</url>
         </repository>
+
         <repository>
             <id>itext</id>
             <name>iText Repository</name>
             <url>https://repo.itextsupport.com/releases</url>
         </repository>
+
         <repository>
             <id>spring-releases</id>
             <url>https://repo.spring.io/release</url>
         </repository>
+
         <repository>
             <id>spring-milestones</id>
             <url>https://repo.spring.io/milestone</url>
         </repository>
+
     </repositories>
 
+    <!-- Dependencies -->
     <dependencies>
-        <!-- Spring Boot Web & JPA -->
+
+        <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- Spring Boot JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -91,52 +89,62 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Jakarta Validation & Transaction -->
+        <!-- Validation -->
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
         </dependency>
+
+        <!-- Transaction -->
         <dependency>
             <groupId>jakarta.transaction</groupId>
             <artifactId>jakarta.transaction-api</artifactId>
         </dependency>
 
-        <!-- PDF Libraries -->
-        <!-- CORRECT iText 8 dependency -->
+        <!-- iText PDF -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>kernel</artifactId>
             <version>8.0.3</version>
         </dependency>
+
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>layout</artifactId>
             <version>8.0.3</version>
         </dependency>
+
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>io</artifactId>
             <version>8.0.3</version>
         </dependency>
 
-        <!-- Test -->
+        <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
+    <!-- Build -->
     <build>
         <plugins>
+
+            <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
+
                 <configuration>
-                    <source>23</source>
-                    <target>23</target>
-                    <release>23</release>
+
+                    <!-- Java Version Fix -->
+                    <release>${java.version}</release>
+
+                    <!-- Lombok Annotation Processing -->
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
@@ -144,11 +152,15 @@
                             <version>1.18.30</version>
                         </path>
                     </annotationProcessorPaths>
+
                 </configuration>
             </plugin>
+
+            <!-- Spring Boot Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+
                 <configuration>
                     <excludes>
                         <exclude>
@@ -157,7 +169,10 @@
                         </exclude>
                     </excludes>
                 </configuration>
+
             </plugin>
+
         </plugins>
     </build>
+
 </project>
