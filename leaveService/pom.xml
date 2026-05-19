@@ -6,7 +6,6 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Spring Boot Parent -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -14,54 +13,56 @@
         <relativePath/>
     </parent>
 
-    <!-- Project Details -->
     <groupId>com.configserver.hrm</groupId>
     <artifactId>leaveService</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>leaveService</name>
 
-    <!-- Java Version -->
     <properties>
         <java.version>17</java.version>
     </properties>
 
+    <!-- Spring Cloud Dependency Management -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <!-- Repositories -->
     <repositories>
-
         <repository>
             <id>central</id>
             <name>Maven Central</name>
             <url>https://repo.maven.apache.org/maven2</url>
         </repository>
-
         <repository>
             <id>itext</id>
             <name>iText Repository</name>
             <url>https://repo.itextsupport.com/releases</url>
         </repository>
-
         <repository>
             <id>spring-releases</id>
             <url>https://repo.spring.io/release</url>
         </repository>
-
         <repository>
             <id>spring-milestones</id>
             <url>https://repo.spring.io/milestone</url>
         </repository>
-
     </repositories>
 
-    <!-- Dependencies -->
     <dependencies>
-
-        <!-- Spring Boot Web -->
+        <!-- Spring Boot Web & JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
-        <!-- Spring Boot JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -89,56 +90,48 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Validation -->
+        <!-- Jakarta Validation & Transaction -->
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
         </dependency>
-
-        <!-- Transaction -->
         <dependency>
             <groupId>jakarta.transaction</groupId>
             <artifactId>jakarta.transaction-api</artifactId>
         </dependency>
 
-        <!-- iText PDF -->
+        <!-- PDF Libraries -->
+        <!-- CORRECT iText 8 dependency -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>kernel</artifactId>
             <version>8.0.3</version>
         </dependency>
-
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>layout</artifactId>
             <version>8.0.3</version>
         </dependency>
-
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>io</artifactId>
             <version>8.0.3</version>
         </dependency>
 
-        <!-- Testing -->
+        <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
-    <!-- Build -->
     <build>
         <plugins>
-
-            <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
-
                 <configuration>
 
                     <!-- Java Version Fix -->
@@ -152,15 +145,11 @@
                             <version>1.18.30</version>
                         </path>
                     </annotationProcessorPaths>
-
                 </configuration>
             </plugin>
-
-            <!-- Spring Boot Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-
                 <configuration>
                     <excludes>
                         <exclude>
@@ -169,10 +158,7 @@
                         </exclude>
                     </excludes>
                 </configuration>
-
             </plugin>
-
         </plugins>
     </build>
-
 </project>
