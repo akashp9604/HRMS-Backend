@@ -24,6 +24,8 @@ public interface LeaveService {
     List<LeaveResponseDTO> getAllLeaves();
     List<EmployeeLeave> getApprovedLeaves();
     List<EmployeeLeave> getApprovedLeavesByEmployee(String employeeId);
+    // Edit/Update existing leave
+    EmployeeLeave updateLeave(UUID leaveId, LeaveType leaveType, LocalDate startDate, LocalDate endDate, String reason);
 
 
 }

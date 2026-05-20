@@ -62,6 +62,13 @@ public class EmployeeLeave {
     private Integer convertedPaidDays = 0;
     private Integer convertedUnpaidDays = 0;
 
+//    //  FIELDS FOR MEDICAL CERTIFICATE
+//    @Column(columnDefinition = "LONGTEXT")
+//    private String medicalCertificateBase64;  // Store base64 string of medical certificate
+//
+//    @Column(name = "medical_certificate_name")
+//    private String medicalCertificateName;
+
     @PrePersist
     protected void onCreate() {
         appliedOn = LocalDateTime.now();

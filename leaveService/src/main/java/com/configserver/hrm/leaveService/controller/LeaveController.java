@@ -166,6 +166,31 @@ public class LeaveController {
         }
     }
 
+    @PutMapping("/edit/{leaveId}")
+    public ResponseEntity<?> editLeave(
+            @PathVariable String leaveId,
+            @RequestBody EmployeeLeave editRequest) {
+        try {
+            UUID leaveUuid = UUID.fromString(leaveId);
+
+            // Call service to update existing leave
+            EmployeeLeave updatedLeave = leaveService.updateLeave(
+                    leaveUuid,
+                    editRequest.getLeaveType(),
+                    editRequest.getStartDate(),
+                    editRequest.getEndDate(),
+                    editRequest.getReason()
+            );
+
+            LeaveResponseDTO responseDTO = convertToLeaveResponseDTO(updatedLeave);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: " + ex.getMessage());
+        }
+    }
+
     @GetMapping("/employee/{employeeId}")
     public ResponseEntity<List<LeaveResponseDTO>> getLeavesByEmployee(@PathVariable String employeeId) {
         try {

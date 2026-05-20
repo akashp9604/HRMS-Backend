@@ -27,5 +27,7 @@ public class LeaveResponseDTO {
     private String approvedBy;
     private LocalDateTime appliedOn;
     private LocalDateTime approvedOn;
+//    private String medicalCertificateBase64;
+//    private String medicalCertificateName;
 
 }
