@@ -62,12 +62,11 @@ public class EmployeeLeave {
     private Integer convertedPaidDays = 0;
     private Integer convertedUnpaidDays = 0;
 
-//    //  FIELDS FOR MEDICAL CERTIFICATE
-//    @Column(columnDefinition = "LONGTEXT")
-//    private String medicalCertificateBase64;  // Store base64 string of medical certificate
-//
-//    @Column(name = "medical_certificate_name")
-//    private String medicalCertificateName;
+    @Column(length = 36)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    private UUID medicalDocumentId;
+    private String medicalDocName;
+    private String medicalDocPath;
 
     @PrePersist
     protected void onCreate() {

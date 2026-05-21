@@ -16,8 +16,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.transaction.Transactional;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -34,6 +40,9 @@ public class LeaveServiceImpl implements LeaveService {
 
     @Value("${hrm.leave.monthly.paid.limit:2}")
     private int monthlyPaidLeaveLimit;
+
+    @Value("${hrm.leave.upload.dir:D:/CSL-VIVEK/HRMS/HRMS-BACKEND/uploads/leave}")
+    private String leaveUploadDir;
 
     @Autowired
     private EmployeeLeaveRepository leaveRepository;
@@ -86,6 +95,21 @@ public class LeaveServiceImpl implements LeaveService {
         }
 
         return applySingleLeave(mappedId, employeeName, LeaveType.valueOf(leaveType), startDate, endDate, reason, false, null);
+    }
+
+    @Override
+    @Transactional
+    public EmployeeLeave applyLeaveWithDocument(String employeeId, String employeeName, String leaveType, LocalDate startDate, LocalDate endDate, String reason, MultipartFile document) {
+        if (LeaveType.SICK.name().equalsIgnoreCase(leaveType) && (document == null || document.isEmpty())) {
+            throw new InvalidLeaveDataException("Medical document is required for sick leave");
+        }
+
+        EmployeeLeave leave = applyLeave(employeeId, employeeName, leaveType, startDate, endDate, reason);
+        if (document != null && !document.isEmpty()) {
+            attachMedicalDocument(leave, document);
+            leave = leaveRepository.save(leave);
+        }
+        return leave;
     }
 
     private EmployeeLeave handlePaidLeaveApplication(String employeeId, String employeeName, LocalDate startDate, LocalDate endDate, String reason) {
@@ -445,6 +469,9 @@ public class LeaveServiceImpl implements LeaveService {
         dto.setApprovedBy(leave.getApprovedBy());
         dto.setAppliedOn(leave.getAppliedOn());
         dto.setApprovedOn(leave.getApprovedOn());
+        dto.setMedicalDocumentId(leave.getMedicalDocumentId());
+        dto.setMedicalDocName(leave.getMedicalDocName());
+        dto.setMedicalDocPath(leave.getMedicalDocPath());
 
         try {
             String employeeName = mappingServiceClient.getEmployeeName(leave.getEmployeeId());
@@ -469,6 +496,27 @@ public class LeaveServiceImpl implements LeaveService {
                 .stream()
                 .max(Comparator.comparing(EmployeeLeave::getAppliedOn))
                 .orElse(null);
+    }
+
+    private void attachMedicalDocument(EmployeeLeave leave, MultipartFile document) {
+        try {
+            Path uploadPath = Paths.get(leaveUploadDir);
+            Files.createDirectories(uploadPath);
+
+            UUID documentId = UUID.randomUUID();
+            String originalName = document.getOriginalFilename() != null ? document.getOriginalFilename() : "medical-document";
+            String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+            String storedFileName = documentId + "_" + safeName;
+
+            Path targetPath = uploadPath.resolve(storedFileName).normalize();
+            Files.copy(document.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            leave.setMedicalDocumentId(documentId);
+            leave.setMedicalDocName(originalName);
+            leave.setMedicalDocPath(targetPath.toString());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store medical document: " + e.getMessage());
+        }
     }
 
     public long getWFHDaysCount(String employeeId, LocalDate from, LocalDate to) {
