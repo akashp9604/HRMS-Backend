@@ -527,41 +527,30 @@ public class LeaveServiceImpl implements LeaveService {
     @Transactional
     public EmployeeLeave updateLeave(UUID leaveId, LeaveType leaveType, LocalDate startDate, LocalDate endDate, String reason) {
 
-        // 1. Find existing leave
-        EmployeeLeave existingLeave = leaveRepository.findById(leaveId)
-                .orElseThrow(() -> new RuntimeException("Leave not found with id: " + leaveId));
+        return leaveRepository.findById(leaveId)
+                .filter(leave -> leave.getStatus() == LeaveStatus.PENDING)
+                .map(leave -> {
+                    // Update fields
+                    leave.setLeaveType(leaveType);
+                    leave.setStartDate(startDate);
+                    leave.setEndDate(endDate);
+                    leave.setReason(reason);
 
-        // 2. Check if leave is in PENDING status (only pending leaves can be edited)
-        if (!existingLeave.getStatus().equals(LeaveStatus.PENDING)) {
-            throw new RuntimeException("Cannot edit leave that is already " + existingLeave.getStatus());
-        }
+                    // Reset approval fields
+                    leave.setStatus(LeaveStatus.PENDING);
+                    leave.setApprovedBy(null);
+                    leave.setApprovedOn(null);
+                    leave.setConvertedPaidDays(0);
+                    leave.setConvertedUnpaidDays(0);
 
-        // 3. Validate dates
-        if (startDate.isAfter(endDate)) {
-            throw new RuntimeException("Start date must be before or equal to end date");
-        }
-
-        if (startDate.isBefore(LocalDate.now())) {
-            throw new RuntimeException("Cannot apply leave for past dates");
-        }
-
-        // 4. Update fields
-        existingLeave.setLeaveType(leaveType);
-        existingLeave.setStartDate(startDate);
-        existingLeave.setEndDate(endDate);
-        existingLeave.setReason(reason);
-
-        // 5. Reset approval fields (since edited leave needs re-approval)
-        existingLeave.setStatus(LeaveStatus.PENDING);
-        existingLeave.setApprovedBy(null);
-        existingLeave.setApprovedOn(null);
-
-        // 6. Reset converted days
-        existingLeave.setConvertedPaidDays(0);
-        existingLeave.setConvertedUnpaidDays(0);
-
-        // 7. Save and return
-        return leaveRepository.save(existingLeave);
+                    return leaveRepository.save(leave);
+                })
+                .orElseThrow(() -> new RuntimeException(
+                        leaveRepository.findById(leaveId)
+                                .map(l -> l.getStatus() == LeaveStatus.PENDING ?
+                                        "Leave not found" : "Cannot edit leave that is already " + l.getStatus())
+                                .orElse("Leave not found with id: " + leaveId)
+                ));
     }
 
 }
