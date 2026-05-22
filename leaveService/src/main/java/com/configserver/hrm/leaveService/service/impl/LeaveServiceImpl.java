@@ -41,7 +41,7 @@ public class LeaveServiceImpl implements LeaveService {
     @Value("${hrm.leave.monthly.paid.limit:2}")
     private int monthlyPaidLeaveLimit;
 
-    @Value("${hrm.leave.upload.dir:D:/CSL-VIVEK/HRMS/HRMS-BACKEND/uploads/leave}")
+    @Value("${hrm.leave.upload.dir:uploads/leave}")
     private String leaveUploadDir;
 
     @Autowired
