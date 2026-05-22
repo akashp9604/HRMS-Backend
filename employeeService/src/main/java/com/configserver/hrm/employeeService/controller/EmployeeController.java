@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -60,13 +59,13 @@ public class EmployeeController {
 
     // Get employee by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Employee> getEmployeeById(@PathVariable UUID id) {
+    public ResponseEntity<Employee> getEmployeeById(@PathVariable Long id) {
         return ResponseEntity.ok(employeeService.getEmployeeById(id));
     }
 
     // Update employee
     @PutMapping("/{id}")
-    public ResponseEntity<String> updateEmployee(@PathVariable UUID id, @RequestBody EmployeeDTO dto) {
+    public ResponseEntity<String> updateEmployee(@PathVariable Long id, @RequestBody EmployeeDTO dto) {
         employeeService.updateEmployee(id, dto);
         return ResponseEntity.ok("Employee updated successfully!");
     }
@@ -74,7 +73,7 @@ public class EmployeeController {
     // Delete employee
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteEmployee(@PathVariable UUID id) {
+    public ResponseEntity<String> deleteEmployee(@PathVariable Long id) {
         employeeService.deleteEmployee(id);
         return ResponseEntity.ok("Employee deleted successfully!");
     }
@@ -93,7 +92,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}/package")
-    public ResponseEntity<EmployeePackageDTO> getEmployeePackage(@PathVariable UUID id) {
+    public ResponseEntity<EmployeePackageDTO> getEmployeePackage(@PathVariable Long id) {
         EmployeePackageDTO dto = employeeService.getEmployeePackage(id);
         return ResponseEntity.ok(dto);
     }
@@ -141,7 +140,7 @@ public class EmployeeController {
 
     // Serve profile images
     @GetMapping("/profile/image/{employeeId}")
-    public ResponseEntity<byte[]> getProfileImage(@PathVariable UUID employeeId) {
+    public ResponseEntity<byte[]> getProfileImage(@PathVariable Long employeeId) {
         try {
             Employee employee = employeeService.getEmployeeById(employeeId);
             if (employee.getProfileImage() == null) {

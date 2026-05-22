@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -77,13 +76,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Employee getEmployeeById(UUID id) {
+    public Employee getEmployeeById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new EmployeeException("Employee not found with id: " + id));
     }
 
     @Override
-    public void updateEmployee(UUID id, EmployeeDTO employeeDTO) {
+    public void updateEmployee(Long id, EmployeeDTO employeeDTO) {
         Employee employee = repository.findById(id)
                 .orElseThrow(() -> new EmployeeException("Employee not found with id: " + id));
 
@@ -111,7 +110,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public void deleteEmployee(UUID id) {
+    public void deleteEmployee(Long id) {
         Employee employee = repository.findById(id)
                 .orElseThrow(() -> new EmployeeException("Employee not found with id: " + id));
         repository.delete(employee);
@@ -132,12 +131,12 @@ public class EmployeeServiceImpl implements EmployeeService {
             String email = (String) empData.get("email");
             String name = (String) empData.get("name");
             String employeeIdStr = (String) empData.get("employeeId");
-            UUID employeeId = null;
+            Long employeeId = null;
             if (employeeIdStr != null && !employeeIdStr.isEmpty()) {
                 try {
-                    employeeId = UUID.fromString(employeeIdStr);
+                    employeeId = Long.parseLong(employeeIdStr);
                 } catch (IllegalArgumentException e) {
-                    System.out.println("Invalid UUID: " + employeeIdStr);
+                    System.out.println("Invalid Long: " + employeeIdStr);
                 }
                 if (email == null || email.isEmpty()) continue; // skip invalid emails
 
@@ -224,7 +223,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeePackageDTO getEmployeePackage(UUID id) {
+    public EmployeePackageDTO getEmployeePackage(Long id) {
         Employee emp = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found with id " + id));
 
@@ -238,7 +237,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         );
     }
     @Override
-    public Employee updateProfile(UUID id, ProfileUpdateDTO profileUpdateDTO) {
+    public Employee updateProfile(Long id, ProfileUpdateDTO profileUpdateDTO) {
         Employee employee = repository.findById(id)
                 .orElseThrow(() -> new EmployeeException("Employee not found with id: " + id));
 
@@ -251,7 +250,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         return repository.save(employee);
     }
     @Override
-    public String updateProfileImage(UUID id, MultipartFile profileImage) {
+    public String updateProfileImage(Long id, MultipartFile profileImage) {
         if (profileImage.isEmpty()) {
             throw new EmployeeException("Profile image cannot be empty");
         }
@@ -277,7 +276,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
     }
 
-    private String saveProfileImage(MultipartFile file, UUID employeeId) {
+    private String saveProfileImage(MultipartFile file, Long employeeId) {
         try {
             // Create upload directory if it doesn't exist
             Path uploadPath = Paths.get(uploadDir);
