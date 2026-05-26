@@ -62,6 +62,12 @@ public class EmployeeLeave {
     private Integer convertedPaidDays = 0;
     private Integer convertedUnpaidDays = 0;
 
+    @Column(length = 36)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    private UUID medicalDocumentId;
+    private String medicalDocName;
+    private String medicalDocPath;
+
     @PrePersist
     protected void onCreate() {
         appliedOn = LocalDateTime.now();

@@ -9,6 +9,7 @@ import com.configserver.hrm.leaveService.service.LeaveService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -29,7 +30,7 @@ public class LeaveController {
     @Autowired
     private MappingServiceClient mappingServiceClient;
 
-    @PostMapping("/apply")
+    @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> applyLeave(@RequestBody EmployeeLeave leaveRequest) {
         try {
             String employeeId = leaveRequest.getEmployeeId();
@@ -40,6 +41,11 @@ public class LeaveController {
             LocalDate endDate = leaveRequest.getEndDate();
             String reason = leaveRequest.getReason();
 
+            if (LeaveType.SICK.name().equalsIgnoreCase(leaveType)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Error: Medical document is required for sick leave");
+            }
+
             // Call service with 6 parameters including employeeName
             EmployeeLeave leave = leaveService.applyLeave(employeeId, employeeName, leaveType, startDate, endDate, reason);
 
@@ -47,6 +53,30 @@ public class LeaveController {
             LeaveResponseDTO responseDTO = convertToLeaveResponseDTO(leave);
             return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
 
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: " + ex.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/apply", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> applyLeaveWithDocument(
+            @RequestPart("leaveData") EmployeeLeave leaveRequest,
+            @RequestPart(value = "document", required = false) MultipartFile document) {
+        try {
+            String employeeId = leaveRequest.getEmployeeId();
+            String employeeName = mappingServiceClient.getEmployeeName(employeeId);
+            String leaveType = String.valueOf(leaveRequest.getLeaveType());
+            LocalDate startDate = leaveRequest.getStartDate();
+            LocalDate endDate = leaveRequest.getEndDate();
+            String reason = leaveRequest.getReason();
+
+            EmployeeLeave leave = leaveService.applyLeaveWithDocument(
+                    employeeId, employeeName, leaveType, startDate, endDate, reason, document
+            );
+
+            LeaveResponseDTO responseDTO = convertToLeaveResponseDTO(leave);
+            return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Error: " + ex.getMessage());
@@ -66,6 +96,9 @@ public class LeaveController {
         dto.setApprovedBy(leave.getApprovedBy());
         dto.setAppliedOn(leave.getAppliedOn());
         dto.setApprovedOn(leave.getApprovedOn());
+        dto.setMedicalDocumentId(leave.getMedicalDocumentId());
+        dto.setMedicalDocName(leave.getMedicalDocName());
+        dto.setMedicalDocPath(leave.getMedicalDocPath());
 
         try {
             // Get employee name from mapping service
@@ -160,6 +193,31 @@ public class LeaveController {
             UUID leaveUuid = UUID.fromString(leaveId);
             EmployeeLeave cancelledLeave = leaveService.cancelLeave(leaveUuid);
             return ResponseEntity.ok(cancelledLeave);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: " + ex.getMessage());
+        }
+    }
+
+    @PutMapping("/edit/{leaveId}")
+    public ResponseEntity<?> editLeave(
+            @PathVariable String leaveId,
+            @RequestBody EmployeeLeave editRequest) {
+        try {
+            UUID leaveUuid = UUID.fromString(leaveId);
+
+            // Call service to update existing leave
+            EmployeeLeave updatedLeave = leaveService.updateLeave(
+                    leaveUuid,
+                    editRequest.getLeaveType(),
+                    editRequest.getStartDate(),
+                    editRequest.getEndDate(),
+                    editRequest.getReason()
+            );
+
+            LeaveResponseDTO responseDTO = convertToLeaveResponseDTO(updatedLeave);
+            return ResponseEntity.ok(responseDTO);
+
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Error: " + ex.getMessage());
