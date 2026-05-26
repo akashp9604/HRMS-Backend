@@ -27,5 +27,8 @@ public class LeaveResponseDTO {
     private String approvedBy;
     private LocalDateTime appliedOn;
     private LocalDateTime approvedOn;
+    private UUID medicalDocumentId;
+    private String medicalDocName;
+    private String medicalDocPath;
 
 }

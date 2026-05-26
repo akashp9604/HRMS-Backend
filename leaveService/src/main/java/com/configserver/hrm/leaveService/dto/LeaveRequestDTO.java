@@ -41,6 +41,10 @@ public class LeaveRequestDTO {
 
     private Boolean isPartialDay = false;
 
+//    private String medicalCertificateBase64;   // Medical certificate file in base64 format
+//
+//    private String medicalCertificateName;
+
     public @NotBlank(message = "Employee ID is required") UUID getEmployeeId() {
         return employeeId;
     }
@@ -80,4 +84,20 @@ public class LeaveRequestDTO {
     public void setReason(String reason) {
         this.reason = reason;
     }
+
+//    public String getMedicalCertificateBase64() {
+//        return medicalCertificateBase64;
+//    }
+//
+//    public void setMedicalCertificateBase64(String medicalCertificateBase64) {
+//        this.medicalCertificateBase64 = medicalCertificateBase64;
+//    }
+//
+//    public String getMedicalCertificateName() {
+//        return medicalCertificateName;
+//    }
+//
+//    public void setMedicalCertificateName(String medicalCertificateName) {
+//        this.medicalCertificateName = medicalCertificateName;
+//    }
 }
