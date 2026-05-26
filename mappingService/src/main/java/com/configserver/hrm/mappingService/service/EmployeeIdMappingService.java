@@ -174,7 +174,7 @@ public class EmployeeIdMappingService {
    /* public List<EmployeeIdMapping> syncAllEmployeesFromEmployeeService() {
         String url = "http://localhost:8088/api/employees";
         String username = "ruchissonawane30@gmail.com";
-        String password = "Ruchi@123";
+        String password = "Admin@123";
         String auth = username + ":" + password;
         byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes());
         String authHeader = "Basic " + new String(encodedAuth);
@@ -227,8 +227,8 @@ public class EmployeeIdMappingService {
     }*/
     public List<EmployeeIdMapping> syncAllEmployeesFromEmployeeService() {
         String url = "http://localhost:8088/api/employees";
-        String username = "ruchissonawane30@gmail.com";
-        String password = "Ruchi@123";
+        String username = "borkarpranit@gmail.com";
+        String password = "uf5pdhdP";
         String auth = username + ":" + password;
         byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes());
         String authHeader = "Basic " + new String(encodedAuth);

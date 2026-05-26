@@ -15,7 +15,7 @@ public class RestTemplateConfig {
         // ✅ Add Basic Authentication interceptor
         // Replace with the same username/password you use in Postman or security config
         restTemplate.getInterceptors().add(
-                new BasicAuthenticationInterceptor("ruchissonawane30@gmail.com", "Ruchi@123")
+                new BasicAuthenticationInterceptor("ruchissonawane30@gmail.com", "Admin@123")
         );
 
         return restTemplate;

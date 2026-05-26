@@ -27,7 +27,7 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom("ruchisonawane30112001@gmail.com");
+            helper.setFrom("admin@gmail.com");
             helper.setTo(employeeEmail);
             helper.setSubject("Offer Letter - Config Server LLP");
 
@@ -60,7 +60,7 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom("ruchisonawane30112001@gmail.com");
+            helper.setFrom("admin@gmail.com");
             helper.setTo(employeeEmail);
             helper.setSubject("Offer Accepted - Download Your Offer Letter - Config Server LLP");
 
