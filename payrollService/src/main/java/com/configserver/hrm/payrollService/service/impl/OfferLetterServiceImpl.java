@@ -29,7 +29,7 @@ public class OfferLetterServiceImpl implements OfferLetterService {
     private static final String PAYROLL_API = "http://localhost:8089/api/payroll/annual-structure";
 
     private static final String BASIC_USERNAME = "ruchissonawane30@gmail.com";
-    private static final String BASIC_PASSWORD = "Ruchi@123";
+    private static final String BASIC_PASSWORD = "Admin@123";
 
     // Changed all fonts from HELVETICA to TIMES_ROMAN
     private static final Font FONT_TITLE = new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD);
