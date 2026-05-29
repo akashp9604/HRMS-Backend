@@ -8,11 +8,12 @@ import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Data
 public class EmployeeDTO {
 
-    private Long employeeId;
+    private UUID employeeId;
 
     @NotBlank(message = "Name is required")
     private String name;

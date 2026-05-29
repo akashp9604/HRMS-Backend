@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -55,7 +56,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
         Employee employee = new Employee();
-       // employee.setId(employeeDTO.getEmployeeId());
+        // employee.setId(employeeDTO.getEmployeeId());
         employee.setName(employeeDTO.getName());
         employee.setEmail(employeeDTO.getEmail());
         employee.setRole(employeeDTO.getRole());
@@ -76,13 +77,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Employee getEmployeeById(Long id) {
+    public Employee getEmployeeById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new EmployeeException("Employee not found with id: " + id));
     }
 
     @Override
-    public void updateEmployee(Long id, EmployeeDTO employeeDTO) {
+    public void updateEmployee(UUID id, EmployeeDTO employeeDTO) {
         Employee employee = repository.findById(id)
                 .orElseThrow(() -> new EmployeeException("Employee not found with id: " + id));
 
@@ -110,7 +111,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public void deleteEmployee(Long id) {
+    public void deleteEmployee(UUID id) {
         Employee employee = repository.findById(id)
                 .orElseThrow(() -> new EmployeeException("Employee not found with id: " + id));
         repository.delete(employee);
@@ -131,12 +132,12 @@ public class EmployeeServiceImpl implements EmployeeService {
             String email = (String) empData.get("email");
             String name = (String) empData.get("name");
             String employeeIdStr = (String) empData.get("employeeId");
-            Long employeeId = null;
+            UUID employeeId = null;
             if (employeeIdStr != null && !employeeIdStr.isEmpty()) {
                 try {
-                    employeeId = Long.parseLong(employeeIdStr);
+                    employeeId = UUID.fromString(employeeIdStr);
                 } catch (IllegalArgumentException e) {
-                    System.out.println("Invalid Long: " + employeeIdStr);
+                    System.out.println("Invalid UUID: " + employeeIdStr);
                 }
                 if (email == null || email.isEmpty()) continue; // skip invalid emails
 
@@ -223,7 +224,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeePackageDTO getEmployeePackage(Long id) {
+    public EmployeePackageDTO getEmployeePackage(UUID id) {
         Employee emp = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found with id " + id));
 
@@ -237,7 +238,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         );
     }
     @Override
-    public Employee updateProfile(Long id, ProfileUpdateDTO profileUpdateDTO) {
+    public Employee updateProfile(UUID id, ProfileUpdateDTO profileUpdateDTO) {
         Employee employee = repository.findById(id)
                 .orElseThrow(() -> new EmployeeException("Employee not found with id: " + id));
 
@@ -250,7 +251,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         return repository.save(employee);
     }
     @Override
-    public String updateProfileImage(Long id, MultipartFile profileImage) {
+    public String updateProfileImage(UUID id, MultipartFile profileImage) {
         if (profileImage.isEmpty()) {
             throw new EmployeeException("Profile image cannot be empty");
         }
@@ -276,7 +277,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
     }
 
-    private String saveProfileImage(MultipartFile file, Long employeeId) {
+    private String saveProfileImage(MultipartFile file, UUID employeeId) {
         try {
             // Create upload directory if it doesn't exist
             Path uploadPath = Paths.get(uploadDir);
