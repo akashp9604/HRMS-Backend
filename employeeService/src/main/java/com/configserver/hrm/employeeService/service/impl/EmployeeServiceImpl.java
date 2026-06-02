@@ -9,6 +9,7 @@ import com.configserver.hrm.employeeService.mail.EmailService;
 import com.configserver.hrm.employeeService.repository.EmployeeRepository;
 import com.configserver.hrm.employeeService.service.EmployeeService;
 import com.configserver.hrm.employeeService.util.PasswordGenerator;
+import com.configserver.hrm.employeeService.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,6 +39,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private AttendanceClient attendanceClient;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Value("${file.upload-dir:./uploads/profiles}")
     private String uploadDir;
@@ -161,12 +165,21 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (!passwordEncoder.matches(password, employee.getPassword())) {
             throw new EmployeeException("Invalid email or password");
         }
+        
+        // Generate JWT Token
+        String token = jwtUtil.generateToken(
+                employee.getEmail(), 
+                employee.getRole().name(), 
+                employee.getId().toString()
+        );
 
         return new LoginResponse(
                 employee.getId(),
                 employee.getName(),
                 employee.getEmail(),
-                employee.getRole()
+                employee.getRole(),
+                token,
+                "Bearer"
         );
     }
 
