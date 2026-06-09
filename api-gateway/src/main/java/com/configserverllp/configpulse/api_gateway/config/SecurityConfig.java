@@ -36,7 +36,6 @@ public class SecurityConfig {
                         // Public endpoints (no authentication required)
                         .requestMatchers("/api/employees/register").permitAll()
                         .requestMatchers("/api/employees/login").permitAll()
-                        .requestMatchers("/api/employees/create-manual").permitAll()
                         .requestMatchers("/api/employees/forgot-password").permitAll()
                         .requestMatchers("/api/employees/reset-password").permitAll()
                         .requestMatchers("/api/employees/profile/image/**").permitAll()
