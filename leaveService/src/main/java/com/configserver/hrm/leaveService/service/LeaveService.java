@@ -28,6 +28,6 @@ public interface LeaveService {
     List<EmployeeLeave> getApprovedLeavesByEmployee(String employeeId);
     // Edit/Update existing leave
     EmployeeLeave updateLeave(UUID leaveId, LeaveType leaveType, LocalDate startDate, LocalDate endDate, String reason);
-
+    EmployeeLeave creditLeaves(String employeeId, String leaveType, Integer daysToCredit, String reason);
 
 }

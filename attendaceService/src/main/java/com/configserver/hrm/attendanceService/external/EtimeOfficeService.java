@@ -32,7 +32,7 @@ public class EtimeOfficeService {
 
     private final String CORPORATE_ID = "ConfigServer";
     private final String USERNAME = "ConfigServer";
-    private final String PASSWORD = "ConfigServer@22";
+    private final String PASSWORD = "%%Dinesh@123";
 
 
     public EtimeOfficeService() {

@@ -601,4 +601,54 @@ public class LeaveServiceImpl implements LeaveService {
                 ));
     }
 
+    @Override
+    @Transactional
+    public EmployeeLeave creditLeaves(String employeeId, String leaveType, Integer daysToCredit, String reason) {
+        String mappedId = resolveLeaveEmpId(employeeId);
+
+        // Validate inputs
+        if (daysToCredit == null || daysToCredit <= 0) {
+            throw new InvalidLeaveDataException("Days to credit must be greater than 0");
+        }
+
+        LeaveType type = LeaveType.valueOf(leaveType);
+
+        // Get or create leave balance
+        LeaveBalance balance = balanceRepository.findByEmployeeIdAndLeaveType(mappedId, type)
+                .orElseGet(() -> {
+                    LeaveBalance newBalance = new LeaveBalance();
+                    newBalance.setEmployeeId(mappedId);
+                    newBalance.setLeaveType(type);
+                    newBalance.setTotalLeaves(0);
+                    newBalance.setUsedLeaves(0);
+                    newBalance.setRemainingLeaves(0);
+                    newBalance.setPaidLeavesUsedThisMonth(0);
+                    newBalance.setMonth(LocalDate.now().getMonthValue());
+                    newBalance.setYear(LocalDate.now().getYear());
+                    return balanceRepository.save(newBalance);
+                });
+
+        // Credit the leaves
+        balance.setTotalLeaves(balance.getTotalLeaves() + daysToCredit);
+        balance.setRemainingLeaves(balance.getRemainingLeaves() + daysToCredit);
+        balanceRepository.save(balance);
+
+        // Create a leave record for this credit (optional but good for audit)
+        String employeeName = mappingServiceClient.getEmployeeName(mappedId);
+
+        EmployeeLeave creditRecord = new EmployeeLeave();
+        creditRecord.setEmployeeId(mappedId);
+        creditRecord.setEmployeeName(employeeName);
+        creditRecord.setLeaveType(type);
+        creditRecord.setStartDate(LocalDate.now());
+        creditRecord.setEndDate(LocalDate.now());
+        creditRecord.setReason("Manual credit: " + daysToCredit + " days added. " + (reason != null ? reason : ""));
+        creditRecord.setStatus(LeaveStatus.APPROVED); // Auto-approve credits
+        creditRecord.setApprovedBy("SYSTEM");
+        creditRecord.setApprovedOn(LocalDateTime.now());
+        creditRecord.setIsConvertedFromPaid(false);
+
+        return leaveRepository.save(creditRecord);
+    }
+
 }

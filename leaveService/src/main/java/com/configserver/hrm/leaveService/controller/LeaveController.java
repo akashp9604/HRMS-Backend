@@ -384,5 +384,36 @@ public class LeaveController {
         return ResponseEntity.ok(responseDTOs);
     }
 
+    @PostMapping("/credit-leaves")
+    public ResponseEntity<?> creditLeaves(@RequestBody Map<String, Object> request) {
+        try {
+            String employeeId = (String) request.get("employeeId");
+            String leaveType = (String) request.get("leaveType");
+            Integer daysToCredit = (Integer) request.get("daysToCredit");
+            String reason = (String) request.getOrDefault("reason", "");
+
+            // Validate required fields
+            if (employeeId == null || leaveType == null || daysToCredit == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Missing required fields: employeeId, leaveType, daysToCredit"));
+            }
+
+            EmployeeLeave creditedLeave = leaveService.creditLeaves(employeeId, leaveType, daysToCredit, reason);
+
+            Map<String, Object> response = Map.of(
+                    "message", "Successfully credited " + daysToCredit + " " + leaveType + " leaves",
+                    "leave", convertToLeaveResponseDTO(creditedLeave)
+            );
+
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid leave type: " + ex.getMessage()));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", ex.getMessage()));
+        }
+    }
 
 }

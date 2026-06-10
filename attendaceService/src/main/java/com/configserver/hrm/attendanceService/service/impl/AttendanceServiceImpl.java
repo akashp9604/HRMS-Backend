@@ -15,6 +15,7 @@ import com.configserver.hrm.attendanceService.external.EtimeOfficeService;
 import com.configserver.hrm.attendanceService.repository.EmployeeAttendanceRepository;
 import com.configserver.hrm.attendanceService.service.AttendanceService;
 import com.configserver.hrm.attendanceService.service.EmailService;
+import com.configserver.hrm.attendanceService.service.EtimeOfficeExcelParser;
 import com.configserver.hrm.attendanceService.service.PlaywrightMonthlyReportDownloader;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -63,6 +65,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Autowired
     private EmployeeEmailConfig employeeEmailConfig;
+
+    @Autowired
+    private EtimeOfficeExcelParser etimeOfficeExcelParser;
 
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -783,6 +788,109 @@ public class AttendanceServiceImpl implements AttendanceService {
         return repository.findByEmployeeIdAndDate(finalEmpId, date).orElse(null);
     }
 
+    @Override
+    @Transactional
+    public List<EmployeeAttendance> importEtimeMonthlyReport(MultipartFile file, String sourceType) throws Exception {
+        System.out.println("=== AttendanceServiceImpl.importEtimeMonthlyReport ===");
+
+        // First, parse the Excel file
+        List<EmployeeAttendance> parsedData = etimeOfficeExcelParser.parseMonthlyReport(file, sourceType);
+
+        if (parsedData == null || parsedData.isEmpty()) {
+            System.out.println("No data parsed from Excel file");
+            return new ArrayList<>();
+        }
+
+        System.out.println("Parsed " + parsedData.size() + " records from Excel");
+
+        // Print first record for debugging
+        if (!parsedData.isEmpty()) {
+            EmployeeAttendance first = parsedData.get(0);
+            System.out.println("First record sample: EmpID=" + first.getEmployeeId() +
+                    ", Date=" + first.getDate() +
+                    ", Status=" + first.getStatus() +
+                    ", InTime=" + first.getInTime() +
+                    ", OutTime=" + first.getOutTime());
+        }
+
+        // Group by employee to delete old records for the same month
+        Map<String, List<EmployeeAttendance>> employeeRecordsMap = new HashMap<>();
+        for (EmployeeAttendance attendance : parsedData) {
+            employeeRecordsMap.computeIfAbsent(attendance.getEmployeeId(), k -> new ArrayList<>())
+                    .add(attendance);
+        }
+
+        // Save all records
+        List<EmployeeAttendance> savedRecords = new ArrayList<>();
+
+        for (Map.Entry<String, List<EmployeeAttendance>> entry : employeeRecordsMap.entrySet()) {
+            String employeeId = entry.getKey();
+            List<EmployeeAttendance> records = entry.getValue();
+
+            if (records.isEmpty()) continue;
+
+            // Get date range for this employee (the month)
+            LocalDate startDate = records.stream()
+                    .map(EmployeeAttendance::getDate)
+                    .min(LocalDate::compareTo)
+                    .orElse(null);
+            LocalDate endDate = records.stream()
+                    .map(EmployeeAttendance::getDate)
+                    .max(LocalDate::compareTo)
+                    .orElse(null);
+
+            if (startDate != null && endDate != null) {
+                System.out.println("Deleting existing records for employee: " + employeeId +
+                        " from " + startDate + " to " + endDate);
+
+                try {
+                    repository.deleteByEmployeeIdAndDateBetween(employeeId, startDate, endDate);
+                    System.out.println("Deleted existing records for employee: " + employeeId);
+                } catch (Exception e) {
+                    System.err.println("Error deleting records for employee " + employeeId + ": " + e.getMessage());
+                }
+            }
+
+            // Save all records for this employee
+            for (EmployeeAttendance attendance : records) {
+                try {
+                    // Set default values for fields that might be null
+                    if (attendance.getShift() == null) {
+                        attendance.setShift("Day");
+                    }
+                    if (attendance.getLateIn() == null) {
+                        attendance.setLateIn("0:00");
+                    }
+                    if (attendance.getErlOut() == null) {
+                        attendance.setErlOut("0:00");
+                    }
+                    if (attendance.getOverTime() == null) {
+                        attendance.setOverTime("0:00");
+                    }
+                    if (attendance.getWorkHours() == null) {
+                        attendance.setWorkHours(0.0);
+                    }
+
+                    // Ensure sourceType is set
+                    if (attendance.getSourceType() == null) {
+                        attendance.setSourceType(sourceType != null ? sourceType : "ETIME_MONTHLY");
+                    }
+
+                    EmployeeAttendance saved = repository.save(attendance);
+                    savedRecords.add(saved);
+                    System.out.println("Saved: " + employeeId + " - " + attendance.getDate() +
+                            " - Status: " + attendance.getStatus());
+                } catch (Exception e) {
+                    System.err.println("Error saving record for employee " + employeeId +
+                            " on date " + attendance.getDate() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        System.out.println("Total records saved: " + savedRecords.size());
+        return savedRecords;
+    }
 
 
 }

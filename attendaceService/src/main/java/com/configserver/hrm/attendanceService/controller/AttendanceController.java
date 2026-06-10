@@ -4,20 +4,23 @@ import com.configserver.hrm.attendanceService.dto.AttendanceRequestDTO;
 import com.configserver.hrm.attendanceService.dto.AttendanceSummaryDTO;
 import com.configserver.hrm.attendanceService.dto.DailySummaryDTO;
 import com.configserver.hrm.attendanceService.entity.EmployeeAttendance;
+import com.configserver.hrm.attendanceService.repository.EmployeeAttendanceRepository;
 import com.configserver.hrm.attendanceService.service.AttendanceService;
+import com.configserver.hrm.attendanceService.service.EtimeOfficeExcelParser;
+import com.configserver.hrm.attendanceService.service.LocalFileImportService;
 import jakarta.validation.Valid;
+import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/attendance")
@@ -26,6 +29,12 @@ public class AttendanceController {
 
     @Autowired
     private AttendanceService attendanceService;
+
+    @Autowired
+    private EtimeOfficeExcelParser etimeOfficeExcelParser;
+
+    @Autowired
+    private EmployeeAttendanceRepository repository;
 
     // ✅ Manual import (POST JSON body with validation)
     @PostMapping("/import")
@@ -225,6 +234,107 @@ public class AttendanceController {
         }
     }
 
+    /**
+     * Import monthly attendance from eTimeOffice Excel report
+     */
+    @PostMapping(value = "/import/etime-monthly", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> importEtimeMonthlyReport(
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "excelFile", required = false) MultipartFile excelFile,
+            @RequestParam(required = false, defaultValue = "ETIME_MONTHLY") String sourceType) {
+
+        // Try to get file from either parameter name
+        MultipartFile actualFile = file != null ? file : excelFile;
+
+        try {
+            // Log request details for debugging
+            System.out.println("=== Debug Information ===");
+            System.out.println("File parameter (file): " + (file != null ? file.getOriginalFilename() : "null"));
+            System.out.println("File parameter (excelFile): " + (excelFile != null ? excelFile.getOriginalFilename() : "null"));
+            System.out.println("Actual file: " + (actualFile != null ? actualFile.getOriginalFilename() : "null"));
+            System.out.println("Source type: " + sourceType);
+
+            if (actualFile == null || actualFile.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "No file uploaded. Please upload a file with parameter name 'file' or 'excelFile'",
+                        "receivedParams", Map.of("file", file != null, "excelFile", excelFile != null)
+                ));
+            }
+
+            String fileName = actualFile.getOriginalFilename();
+            if (fileName == null || (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls"))) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "Please upload a valid Excel file (.xlsx or .xls). Uploaded file: " + fileName
+                ));
+            }
+
+            // ✅ Call the service method that actually saves to database
+            List<EmployeeAttendance> importedData = attendanceService.importEtimeMonthlyReport(actualFile, sourceType);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Monthly attendance imported successfully from eTimeOffice report");
+            response.put("recordsImported", importedData.size());
+            response.put("employeesProcessed", importedData.stream().map(EmployeeAttendance::getEmployeeId).distinct().count());
+            response.put("data", importedData);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error importing Excel file: " + e.getMessage()));
+        }
+    }
+
+
+    @Autowired
+    private LocalFileImportService localFileImportService;
+
+    /**
+     * Import from local file path (calls the existing API internally)
+     */
+    @PostMapping("/import/from-local-path")
+    public ResponseEntity<?> importFromLocalPath(
+            @RequestParam(defaultValue = "F:/ConfigServerLlp/HRMS-Backend/attendaceService/src/monthperformance01062026185649.xls")
+            String filePath,
+            @RequestParam(required = false, defaultValue = "ETIME_MONTHLY")
+            String sourceType) {
+
+        try {
+            System.out.println("=== Importing from local file path ===");
+            System.out.println("File path: " + filePath);
+
+            // Method 1: Using RestTemplate (calls your existing API)
+            // Map<String, Object> result = localFileImportService.importViaRestTemplate(filePath, sourceType);
+
+            // Method 2: Direct call (recommended - no HTTP overhead)
+            Map<String, Object> result = localFileImportService.importDirectly(filePath, sourceType);
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Quick import using default file path
+     */
+    @PostMapping("/import/auto")
+    public ResponseEntity<?> autoImport() {
+        String defaultPath = "F:/ConfigServerLlp/HRMS-Backend/attendaceService/src/monthperformance01062026185649.xls";
+
+        try {
+            Map<String, Object> result = localFileImportService.importDirectly(defaultPath, "ETIME_MONTHLY");
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
 }
 
 

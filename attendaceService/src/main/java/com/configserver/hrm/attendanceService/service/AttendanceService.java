@@ -4,6 +4,7 @@ import com.configserver.hrm.attendanceService.dto.AttendanceRequestDTO;
 import com.configserver.hrm.attendanceService.dto.AttendanceSummaryDTO;
 import com.configserver.hrm.attendanceService.dto.DailySummaryDTO;
 import com.configserver.hrm.attendanceService.entity.EmployeeAttendance;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -52,4 +53,5 @@ public interface AttendanceService {
 
     EmployeeAttendance getAttendanceForEmployeeOnDate(String employeeId, LocalDate date);
 
+    List<EmployeeAttendance> importEtimeMonthlyReport(MultipartFile file, String sourceType) throws Exception;
 }
