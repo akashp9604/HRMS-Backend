@@ -1,9 +1,7 @@
 package com.configserver.hrm.leaveService.dto;
 
-import java.util.UUID;
-
 public class EmployeeDTO {
-    private UUID id;          // UUID from Employee Service
+    private Long id;          // UUID from Employee Service
     private String name;
     private String email;
     private String role;
@@ -11,10 +9,10 @@ public class EmployeeDTO {
     private String department;
 
     // Getters & Setters
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
     public String getName() {

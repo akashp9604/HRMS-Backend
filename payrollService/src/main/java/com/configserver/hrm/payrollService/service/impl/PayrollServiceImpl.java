@@ -58,7 +58,7 @@ public class PayrollServiceImpl implements PayrollService {
 
     @Override
     @Transactional
-    public AnnualSalaryStructureDTO createAnnualSalaryStructure(UUID employeeId, String authHeader) {
+    public AnnualSalaryStructureDTO createAnnualSalaryStructure(Long employeeId, String authHeader) {
         try {
             // 1. Fetch employee data
             Map<String, Object> employeeData = employeeClient.getEmployeePackage(employeeId, authHeader);
@@ -181,7 +181,7 @@ public class PayrollServiceImpl implements PayrollService {
     }
 
     @Override
-    public AnnualSalaryStructureDTO getAnnualSalaryStructure(UUID employeeId, String financialYear) {
+    public AnnualSalaryStructureDTO getAnnualSalaryStructure(Long employeeId, String financialYear) {
         AnnualSalaryStructure structure = annualStructureRepository
                 .findByEmployeeIdAndFinancialYear(employeeId, financialYear)
                 .orElseThrow(() -> new PayrollException("Annual salary structure not found for employee in " + financialYear));
@@ -223,7 +223,7 @@ public class PayrollServiceImpl implements PayrollService {
 
     @Override
     @Transactional
-    public PayslipDTO generatePayslip(UUID employeeId, int month, int year, String authHeader) {
+    public PayslipDTO generatePayslip(Long employeeId, int month, int year, String authHeader) {
         try {
             // 1️⃣ Fetch Employee details dynamically
             Map<String, Object> empDetails = employeeClient.getEmployeeDetails(employeeId, authHeader);
@@ -429,7 +429,7 @@ public class PayrollServiceImpl implements PayrollService {
 
 
     @Override
-    public byte[] generatePayslipPdf(UUID employeeId, int month, int year) throws DocumentException {
+    public byte[] generatePayslipPdf(Long employeeId, int month, int year) throws DocumentException {
         // fetch payslip details
         PayslipDTO payslip = generatePayslip(employeeId, month, year, null);
 
@@ -451,7 +451,7 @@ public class PayrollServiceImpl implements PayrollService {
     /**
      * Get or create attendance mapping for employee
      */
-    private String getOrCreateAttendanceMapping(UUID employeeId, String employeeName) {
+    private String getOrCreateAttendanceMapping(Long employeeId, String employeeName) {
         Map<String, Object> mapping = mappingServiceClient.getByPayrollUuid(employeeId.toString());
         String attendanceEmpId = null;
 

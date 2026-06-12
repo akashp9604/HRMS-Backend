@@ -18,7 +18,7 @@ public class OfferLetterStatus {
     private UUID id;
 
     @Column(name = "employee_id", unique = true)
-    private UUID employeeId;
+    private Long employeeId;
 
     @Column(name = "employee_email") // ✅ Store employee email
     private String employeeEmail;

@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
-import java.util.UUID;
 
 @Component
 public class EmployeeClient {
@@ -23,7 +22,7 @@ public class EmployeeClient {
      * Fetch basic package info for salary structure calculation.
      * GET {employee.service.url}/{employeeId}/package
      */
-    public Map<String, Object> getEmployeePackage(UUID employeeId, String authHeader) {
+    public Map<String, Object> getEmployeePackage(Long employeeId, String authHeader) {
         String url = baseUrl + "/" + employeeId + "/package";
 
         HttpHeaders headers = new HttpHeaders();
@@ -40,7 +39,7 @@ public class EmployeeClient {
      * ✅ Fetch complete employee details (for payslip generation)
      * GET {employee.service.url}/{employeeId}
      */
-    public Map<String, Object> getEmployeeDetails(UUID employeeId, String authHeader) {
+    public Map<String, Object> getEmployeeDetails(Long employeeId, String authHeader) {
         String url = baseUrl + "/" + employeeId; // e.g. http://localhost:8088/api/employees/{id}
 
         HttpHeaders headers = new HttpHeaders();

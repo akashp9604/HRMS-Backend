@@ -1,20 +1,18 @@
 package com.configserver.hrm.leaveService.dto;
 
-import java.util.UUID;
-
 public class LeaveBalanceDTO {
 
-    private UUID employeeId;
+    private Long employeeId;
     private String leaveType;
     private int totalLeaves;
     private int usedLeaves;
     private int remainingLeaves;
 
-    public UUID getEmployeeId() {
+    public Long getEmployeeId() {
         return employeeId;
     }
 
-    public void setEmployeeId(UUID employeeId) {
+    public void setEmployeeId(Long employeeId) {
         this.employeeId = employeeId;
     }
 

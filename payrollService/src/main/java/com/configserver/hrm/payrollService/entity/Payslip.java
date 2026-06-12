@@ -3,7 +3,6 @@ package com.configserver.hrm.payrollService.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
-import java.util.UUID;
 
 @Entity
 @Table(name = "payslips")
@@ -19,7 +18,7 @@ public class Payslip {
     private Long id;
 
     // --- Employee Info ---
-    private UUID employeeId;
+    private Long employeeId;
     private String employeeName;
     private String designation;
     private String department;

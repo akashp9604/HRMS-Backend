@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/payroll/offer-letter")
@@ -37,7 +36,7 @@ public class OfferLetterController {
 
     // ✅ UPDATED: Send offer email with ONLY acceptance link
     @PostMapping("/send-offer")
-    public ResponseEntity<?> sendOfferLetter(@RequestParam UUID employeeId) {
+    public ResponseEntity<?> sendOfferLetter(@RequestParam Long employeeId) {
         try {
             System.out.println("📧 Sending offer email for employee: " + employeeId);
 
@@ -75,7 +74,7 @@ public class OfferLetterController {
 
     // Check acceptance status
     @GetMapping("/status/{employeeId}")
-    public ResponseEntity<?> getOfferStatus(@PathVariable UUID employeeId) {
+    public ResponseEntity<?> getOfferStatus(@PathVariable Long employeeId) {
         try {
             OfferLetterStatus status = offerLetterStatusRepository.findByEmployeeId(employeeId)
                     .orElse(OfferLetterStatus.builder()
@@ -97,7 +96,7 @@ public class OfferLetterController {
 
     // ✅ ENHANCED: Accept offer and send download link via email
     @PostMapping("/accept")
-    public ResponseEntity<?> acceptOffer(@RequestParam UUID employeeId) {
+    public ResponseEntity<?> acceptOffer(@RequestParam Long employeeId) {
         try {
             System.out.println("🎉 Accepting offer for employee: " + employeeId);
 
@@ -153,7 +152,7 @@ public class OfferLetterController {
 
     // ✅ ENHANCED: Download offer letter with STRICT acceptance check
     @GetMapping("/download")
-    public ResponseEntity<byte[]> downloadOfferLetter(@RequestParam UUID employeeId) {
+    public ResponseEntity<byte[]> downloadOfferLetter(@RequestParam Long employeeId) {
         try {
             System.out.println("=== 📥 DOWNLOAD REQUEST ===");
             System.out.println("Employee ID: " + employeeId);
@@ -205,7 +204,7 @@ public class OfferLetterController {
     public ResponseEntity<?> sendOfferLetterWithEmail(
             @RequestBody Map<String, String> request) {
         try {
-            UUID employeeId = UUID.fromString(request.get("employeeId"));
+            Long employeeId = Long.parseLong(request.get("employeeId"));
             String employeeEmail = request.get("employeeEmail");
             String employeeName = request.get("employeeName");
 
@@ -252,7 +251,7 @@ public class OfferLetterController {
             System.out.println("🧪 Testing email configuration to: " + testEmail);
 
             boolean emailSent = emailService.sendOfferEmail(
-                    UUID.randomUUID(),
+                    1L,
                     testEmail,
                     "Test Employee",
                     "http://localhost:3000/offer-acceptance?employeeId=test"

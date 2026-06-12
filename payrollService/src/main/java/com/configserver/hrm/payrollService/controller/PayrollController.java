@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/payroll")
@@ -38,7 +37,7 @@ public class PayrollController {
     @PostMapping("/generate")
     public PayslipDTO generatePayslip(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestParam UUID employeeId,
+            @RequestParam Long employeeId,
             @RequestParam int month,
             @RequestParam int year) {
         return payrollService.generatePayslip(employeeId, month, year, authHeader);
@@ -61,13 +60,13 @@ public class PayrollController {
     @PostMapping("/annual-structure")
     public AnnualSalaryStructureDTO createAnnualSalaryStructure(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestParam UUID employeeId) {
+            @RequestParam Long employeeId) {
         return payrollService.createAnnualSalaryStructure(employeeId, authHeader);
     }
 
     @GetMapping("/annual-structure")
     public AnnualSalaryStructureDTO getAnnualSalaryStructure(
-            @RequestParam UUID employeeId,
+            @RequestParam Long employeeId,
             @RequestParam String financialYear) {
         return payrollService.getAnnualSalaryStructure(employeeId, financialYear);
     }
@@ -135,7 +134,7 @@ public class PayrollController {
    /* @GetMapping("/download-template-payslip")
     public ResponseEntity<byte[]> downloadTemplatePayslip(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestParam UUID employeeId,
+            @RequestParam Long employeeId,
             @RequestParam int month,
             @RequestParam int year) {
         try {
@@ -156,7 +155,7 @@ public class PayrollController {
 */
    @GetMapping("/download-payslip/by-month")
    public ResponseEntity<byte[]> downloadPayslipByMonth(
-           @RequestParam UUID employeeId,
+           @RequestParam Long employeeId,
            @RequestParam int month,
            @RequestParam int year) {
        try {

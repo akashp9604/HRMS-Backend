@@ -1,9 +1,7 @@
 package com.configserver.hrm.mappingService.dto;
 
-import java.util.UUID;
-
 public class EmployeeDTO {
-    private UUID id;
+    private Long id;
     private String name;
     private String email;
     private String role;
@@ -11,8 +9,8 @@ public class EmployeeDTO {
     private String department;
 
     // Getters and Setters
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getEmail() { return email; }

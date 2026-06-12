@@ -8,7 +8,6 @@ import java.time.DayOfWeek;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Component
 public class AttendanceClient {
@@ -19,7 +18,7 @@ public class AttendanceClient {
     private final String BASE_URL = "http://localhost:8085/api/attendance";
 
     // ✅ Calls monthly summary API (matches your endpoint exactly)
-    public Map<String, Object> getMonthlySummaryForEmployee(UUID employeeId, String month) {
+    public Map<String, Object> getMonthlySummaryForEmployee(Long employeeId, String month) {
         try {
             String url = BASE_URL + "/employee/" + employeeId + "/monthly-summary?month=" + month;
             System.out.println("📞 Calling Monthly Summary API: " + url);
@@ -46,7 +45,7 @@ public class AttendanceClient {
     }
 
     // ✅ Keep existing old methods for compatibility
-    public Map<String, Object> getMonthlyAttendance(UUID employeeId, int month, int year) {
+    public Map<String, Object> getMonthlyAttendance(Long employeeId, int month, int year) {
         String url = BASE_URL + "/" + employeeId.toString() + "/summary?month=" + month + "&year=" + year;
         return restTemplate.getForObject(url, Map.class);
     }

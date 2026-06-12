@@ -2,7 +2,6 @@ package com.configserver.hrm.payrollService.dto;
 
 import lombok.*;
 import java.time.LocalDate;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -12,7 +11,7 @@ import java.util.UUID;
 public class PayslipDTO {
 
     // 🔹 Employee Information
-    private UUID employeeId;
+    private Long employeeId;
     private String employeeName;
     private String department;
     private String designation;

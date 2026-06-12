@@ -6,8 +6,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
-
 @Service
 public class EmailService {
 
@@ -15,7 +13,7 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     // ✅ INITIAL OFFER EMAIL: Only acceptance link, NO download
-    public boolean sendOfferEmail(UUID employeeId, String employeeEmail, String employeeName, String acceptanceLink) {
+    public boolean sendOfferEmail(Long employeeId, String employeeEmail, String employeeName, String acceptanceLink) {
         System.out.println("🚀 Sending initial offer email to: " + employeeEmail);
 
         try {
@@ -48,7 +46,7 @@ public class EmailService {
     }
 
     // ✅ NEW: Send acceptance confirmation with direct download link
-    public boolean sendAcceptanceConfirmationEmail(UUID employeeId, String employeeEmail, String employeeName) {
+    public boolean sendAcceptanceConfirmationEmail(Long employeeId, String employeeEmail, String employeeName) {
         System.out.println("🎉 Sending acceptance confirmation to: " + employeeEmail);
 
         try {

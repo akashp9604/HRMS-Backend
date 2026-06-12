@@ -2,7 +2,6 @@ package com.configserver.hrm.payrollService.dto;
 
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -11,7 +10,7 @@ import java.util.UUID;
 @Builder
 public class AnnualSalaryStructureDTO {
     private Long id;
-    private UUID employeeId;
+    private Long employeeId;
     private String employeeName;
     private String designation;
 

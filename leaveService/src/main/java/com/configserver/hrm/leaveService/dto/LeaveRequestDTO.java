@@ -3,12 +3,11 @@ package com.configserver.hrm.leaveService.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
-import java.util.UUID;
 
 public class LeaveRequestDTO {
 
     @NotBlank(message = "Employee ID is required")
-    private UUID employeeId;
+    private Long employeeId;
 
     @NotBlank(message = "Leave type is required")
     private String leaveType;
@@ -45,11 +44,11 @@ public class LeaveRequestDTO {
 //
 //    private String medicalCertificateName;
 
-    public @NotBlank(message = "Employee ID is required") UUID getEmployeeId() {
+    public @NotBlank(message = "Employee ID is required") Long getEmployeeId() {
         return employeeId;
     }
 
-    public void setEmployeeId(@NotBlank(message = "Employee ID is required") UUID employeeId) {
+    public void setEmployeeId(@NotBlank(message = "Employee ID is required") Long employeeId) {
         this.employeeId = employeeId;
     }
 

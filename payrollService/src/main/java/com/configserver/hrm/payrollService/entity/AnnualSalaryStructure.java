@@ -3,7 +3,6 @@ package com.configserver.hrm.payrollService.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Getter
@@ -18,7 +17,7 @@ public class AnnualSalaryStructure {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private UUID employeeId;
+    private Long employeeId;
     private String employeeName;
     private String designation;
 

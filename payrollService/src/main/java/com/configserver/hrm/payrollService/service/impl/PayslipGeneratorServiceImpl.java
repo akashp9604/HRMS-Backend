@@ -2,7 +2,6 @@ package com.configserver.hrm.payrollService.service.impl;
 
 import com.configserver.hrm.payrollService.dto.PayslipDTO;
 import com.configserver.hrm.payrollService.exception.PayrollException;
-import com.configserver.hrm.payrollService.service.HtmlPdfService;
 import com.configserver.hrm.payrollService.service.PayslipGeneratorService;
 import com.configserver.hrm.payrollService.service.PayrollService;
 import com.itextpdf.text.pdf.*;
@@ -13,8 +12,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.time.YearMonth;
-import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class PayslipGeneratorServiceImpl implements PayslipGeneratorService {
@@ -27,7 +24,7 @@ public class PayslipGeneratorServiceImpl implements PayslipGeneratorService {
     @Override
     public byte[] generatePayslipPdf(String employeeId, int month, int year, String authHeader) {
         try {
-            UUID empUuid = UUID.fromString(employeeId);
+            Long empUuid = Long.parseLong(employeeId);
             YearMonth ym = YearMonth.of(year, month);
 
             // 1️⃣ Get dynamic payslip data
