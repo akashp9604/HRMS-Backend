@@ -23,7 +23,7 @@ public class LocalFileImportService {
     @Autowired
     private AttendanceService attendanceService;
 
-    private static final String IMPORT_API_URL = "http://localhost:8085/api/attendance/import/etime-monthly";
+    private static final String IMPORT_API_URL = "http://localhost:80894/api/attendance/import/etime-monthly";
 
     /**
      * Method 1: Call the existing API internally using RestTemplate

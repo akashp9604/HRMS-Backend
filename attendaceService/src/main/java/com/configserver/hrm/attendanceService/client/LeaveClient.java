@@ -14,7 +14,7 @@ public class LeaveClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private static final String BASE_URL = "http://localhost:8087/api"; // leave-service base URL
+    private static final String BASE_URL = "http://localhost:8093/api"; // leave-service base URL
 
     // 🔹 1. Get all approved leaves for single employee
     public List<Map<String, Object>> getApprovedLeaves(String employeeId) {

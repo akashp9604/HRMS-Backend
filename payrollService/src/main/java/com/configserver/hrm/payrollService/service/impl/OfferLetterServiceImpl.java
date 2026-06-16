@@ -29,7 +29,7 @@ public class OfferLetterServiceImpl implements OfferLetterService {
     private RestTemplate restTemplate;
 
     private static final String EMPLOYEE_API = "http://localhost:8088/api/employees/";
-    private static final String PAYROLL_API = "http://localhost:8089/api/payroll/annual-structure";
+    private static final String PAYROLL_API = "http://localhost:8092/api/payroll/annual-structure";
 
 
     // Changed all fonts from HELVETICA to TIMES_ROMAN

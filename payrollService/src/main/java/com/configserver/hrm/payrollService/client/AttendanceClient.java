@@ -15,7 +15,7 @@ public class AttendanceClient {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String BASE_URL = "http://localhost:8085/api/attendance";
+    private final String BASE_URL = "http://localhost:8094/api/attendance";
 
     // ✅ Calls monthly summary API (matches your endpoint exactly)
     public Map<String, Object> getMonthlySummaryForEmployee(Long employeeId, String month) {

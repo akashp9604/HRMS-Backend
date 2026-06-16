@@ -15,7 +15,7 @@ public class AttendanceClient {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String attendanceServiceBaseUrl = "http://localhost:8085/api/attendance";
+    private final String attendanceServiceBaseUrl = "http://localhost:8094/api/attendance";
 
     // ✅ Import today attendance
     public List<EmployeeAttendanceDTO> importTodayAttendance() {

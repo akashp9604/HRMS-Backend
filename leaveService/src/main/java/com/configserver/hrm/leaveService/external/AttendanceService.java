@@ -15,7 +15,7 @@ public class AttendanceService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String baseUrl = "http://localhost:8085/api/attendance";
+    private final String baseUrl = "http://localhost:8094/api/attendance";
 
     public List<EmployeeAttendanceDTO> getTodayAttendance() {
         ResponseEntity<List<EmployeeAttendanceDTO>> response = restTemplate.exchange(

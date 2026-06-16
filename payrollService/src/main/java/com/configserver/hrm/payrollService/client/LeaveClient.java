@@ -15,7 +15,7 @@ public class LeaveClient {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String BASE_URL = "http://localhost:8087/api";
+    private final String BASE_URL = "http://localhost:8093/api";
 
     public List<Map<String, Object>> getApprovedLeaves(Long employeeId, LocalDate from, LocalDate to) {
         String url = String.format(BASE_URL + "/leaves/employee/%s/between?from=%s&to=%s",
