@@ -4,12 +4,15 @@ import com.configserver.hrm.payrollService.dto.OfferLetterDTO;
 import com.configserver.hrm.payrollService.service.OfferLetterService;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -28,8 +31,6 @@ public class OfferLetterServiceImpl implements OfferLetterService {
     private static final String EMPLOYEE_API = "http://localhost:8088/api/employees/";
     private static final String PAYROLL_API = "http://localhost:8089/api/payroll/annual-structure";
 
-    private static final String BASIC_USERNAME = "ruchissonawane30@gmail.com";
-    private static final String BASIC_PASSWORD = "Admin@123";
 
     // Changed all fonts from HELVETICA to TIMES_ROMAN
     private static final Font FONT_TITLE = new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD);
@@ -47,8 +48,15 @@ public class OfferLetterServiceImpl implements OfferLetterService {
     @Override
     public byte[] generateOfferLetter(String employeeId) throws Exception {
 
+        String jwtToken = extractJwtFromRequest();
+
+        if (jwtToken == null || jwtToken.isEmpty()) {
+            throw new RuntimeException("Authentication required: No JWT token found in request");
+        }
+
         HttpHeaders headers = new HttpHeaders();
-        headers.setBasicAuth(BASIC_USERNAME, BASIC_PASSWORD);
+        headers.setBearerAuth(jwtToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         Map<?, ?> empData = getJson(EMPLOYEE_API + employeeId, entity);
@@ -66,7 +74,7 @@ public class OfferLetterServiceImpl implements OfferLetterService {
         String doj = asString(empData.get("dateOfJoining"));
         if (doj != null && !doj.isBlank()) dto.setDateOfJoining(LocalDate.parse(doj));
         dto.setIssueDate(LocalDate.now());
-        dto.setReferenceNumber(LocalDate.now().format(REF_DATE) + "-O-L-" + employeeId.substring(0, 4).toUpperCase());
+        dto.setReferenceNumber(LocalDate.now().format(REF_DATE) + "-O-L-" + employeeId.toUpperCase());
 
         // Map salary components exactly as per your template
         dto.setAnnualBasic(getDouble(salData.get("annualBasic")));
@@ -90,6 +98,34 @@ public class OfferLetterServiceImpl implements OfferLetterService {
         return generatePdf(dto);
     }
 
+    /**
+     * Extract JWT from the incoming HTTP request
+     * Get the current HTTP request
+     * Get the Authorization header
+     * Extract token if it starts with "Bearer "
+     * Also try to get from a custom header if needed
+    */
+    private String extractJwtFromRequest() {
+        try {
+            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+
+            String authHeader = request.getHeader("Authorization");
+
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                return authHeader.substring(7);
+            }
+
+            String tokenHeader = request.getHeader("X-Auth-Token");
+            if (tokenHeader != null && !tokenHeader.isEmpty()) {
+                return tokenHeader;
+            }
+
+        } catch (Exception e) {
+            System.err.println("Failed to extract JWT from request: " + e.getMessage());
+        }
+        return null;
+    }
+
     private Map<?, ?> getJson(String url, HttpEntity<Void> entity) {
         try {
             ResponseEntity<?> resp = restTemplate.exchange(url, HttpMethod.GET, entity, Object.class);
@@ -97,7 +133,9 @@ public class OfferLetterServiceImpl implements OfferLetterService {
                 throw new RuntimeException("Failed call: " + url + " status=" + resp.getStatusCode());
             return (LinkedHashMap<?, ?>) resp.getBody();
         } catch (HttpClientErrorException.Unauthorized ex) {
-            throw new RuntimeException("401 Unauthorized calling " + url + " — check BasicAuth credentials", ex);
+            throw new RuntimeException("401 Unauthorized calling " + url + " — JWT token may be invalid or expired", ex);
+        } catch (HttpClientErrorException.Forbidden ex) {
+            throw new RuntimeException("403 Forbidden calling " + url + " — Insufficient permissions", ex);
         }
     }
 

@@ -19,9 +19,6 @@ public class EtimeOfficeExcelParser {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("MMMM-yyyy", Locale.ENGLISH);
 
-    /**
-     * Parse eTimeOffice monthly report Excel file - ONLY parses, does NOT save to DB
-     */
     public List<EmployeeAttendance> parseMonthlyReport(MultipartFile file, String sourceType) throws Exception {
         List<EmployeeAttendance> allAttendance = new ArrayList<>();
 
@@ -31,14 +28,12 @@ public class EtimeOfficeExcelParser {
             Sheet sheet = workbook.getSheetAt(0);
             FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
 
+            // Extract month/year from the report
+            YearMonth yearMonth = extractYearMonthFromSheet(sheet, evaluator);
+            System.out.println("Processing report for: " + yearMonth);
+
             int lastRowNum = sheet.getLastRowNum();
             int currentRow = 0;
-
-            // Get month/year from the first occurrence
-            String monthYear = extractMonthYear(sheet, evaluator);
-            YearMonth yearMonth = parseMonthYear(monthYear);
-
-            System.out.println("Processing report for: " + yearMonth);
 
             while (currentRow <= lastRowNum) {
                 Row row = sheet.getRow(currentRow);
@@ -47,32 +42,26 @@ public class EtimeOfficeExcelParser {
                     continue;
                 }
 
-                // Look for "Empcode" pattern - indicates start of employee block
+                // Look for "Empcode" pattern in column A
                 String firstCellValue = getCellValue(row.getCell(0), evaluator);
                 if ("Empcode".equalsIgnoreCase(firstCellValue)) {
                     System.out.println("Found employee block at row: " + currentRow);
 
-                    // Parse employee block starting from this row
+                    // Parse employee from this row
                     EmployeeBlock block = parseEmployeeBlock(sheet, currentRow, evaluator, yearMonth);
 
                     if (block != null && block.employeeId != null && !block.attendances.isEmpty()) {
                         System.out.println("Processing employee: " + block.employeeId + " - " + block.employeeName);
                         System.out.println("Attendance records found: " + block.attendances.size());
 
-                        // Add source type to all attendance records
                         for (EmployeeAttendance attendance : block.attendances) {
                             attendance.setSourceType(sourceType != null ? sourceType : "ETIME_MONTHLY");
                             allAttendance.add(attendance);
                         }
-
-                        System.out.println("Added " + block.attendances.size() + " records for employee: " + block.employeeId);
                     }
 
-                    // Skip to next employee block - look for next "Empcode"
-                    currentRow = findNextEmpcodeRow(sheet, currentRow + 1, evaluator);
-                    if (currentRow == -1) {
-                        break; // No more employee blocks
-                    }
+                    // Move to next employee block (each block is exactly 10 rows)
+                    currentRow = currentRow + 10;
                     continue;
                 }
                 currentRow++;
@@ -83,168 +72,106 @@ public class EtimeOfficeExcelParser {
         return allAttendance;
     }
 
-    /**
-     * Find the next row containing "Empcode" starting from given row
-     */
-    private int findNextEmpcodeRow(Sheet sheet, int startRow, FormulaEvaluator evaluator) {
-        for (int i = startRow; i <= sheet.getLastRowNum(); i++) {
+    private YearMonth extractYearMonthFromSheet(Sheet sheet, FormulaEvaluator evaluator) {
+        for (int i = 0; i <= 5; i++) {
             Row row = sheet.getRow(i);
-            if (row != null) {
-                String cellValue = getCellValue(row.getCell(0), evaluator);
-                if ("Empcode".equalsIgnoreCase(cellValue)) {
-                    return i;
+            if (row == null) continue;
+
+            for (int col = 0; col <= 30; col++) {
+                String cellValue = getCellValue(row.getCell(col), evaluator);
+                if (cellValue != null && cellValue.contains("Report Month")) {
+                    String monthValue = getCellValue(row.getCell(col + 3), evaluator);
+                    if (monthValue != null && !monthValue.isEmpty()) {
+                        System.out.println("Found Report Month: " + monthValue);
+                        return parseMonthYear(monthValue);
+                    }
                 }
             }
         }
-        return -1;
+        return YearMonth.now();
     }
 
-    /**
-     * Parse a single employee block from the Excel
-     */
-    private EmployeeBlock parseEmployeeBlock(Sheet sheet, int startRow, FormulaEvaluator evaluator, YearMonth yearMonth) {
+    private EmployeeBlock parseEmployeeBlock(Sheet sheet, int empCodeRowIndex, FormulaEvaluator evaluator, YearMonth yearMonth) {
         EmployeeBlock block = new EmployeeBlock();
 
         try {
-            // Row 0 of block: "Empcode" | (blank) | {employeeId} | (blank) | "Name" | (blank) | {employeeName}
-            Row empCodeRow = sheet.getRow(startRow);
+            Row empCodeRow = sheet.getRow(empCodeRowIndex);
             if (empCodeRow == null) return null;
 
-            // Get employee ID from column C (index 2)
+            // Employee ID at column C (index 2)
             block.employeeId = getCellValue(empCodeRow.getCell(2), evaluator);
             if (block.employeeId == null || block.employeeId.isEmpty()) return null;
             block.employeeId = block.employeeId.trim();
 
-            // Get employee name - try different possible columns
-            block.employeeName = getCellValue(empCodeRow.getCell(7), evaluator); // Column H
+            // Employee name at column H (index 7)
+            block.employeeName = getCellValue(empCodeRow.getCell(7), evaluator);
             if (block.employeeName == null || block.employeeName.isEmpty()) {
-                block.employeeName = getCellValue(empCodeRow.getCell(6), evaluator); // Column G
-            }
-            if (block.employeeName == null || block.employeeName.isEmpty()) {
-                block.employeeName = getCellValue(empCodeRow.getCell(5), evaluator); // Column F
-            }
-            if (block.employeeName != null) {
-                block.employeeName = block.employeeName.trim();
+                block.employeeName = block.employeeId;
             } else {
-                block.employeeName = block.employeeId; // Use ID as fallback
+                block.employeeName = block.employeeName.trim();
             }
 
             System.out.println("Found employee: ID=" + block.employeeId + ", Name=" + block.employeeName);
 
-            // Find the row where day numbers start
-            int dataStartRow = findDataStartRow(sheet, startRow, evaluator);
-            if (dataStartRow != -1) {
-                block.attendances = parseDailyData(sheet, dataStartRow, block, evaluator, yearMonth);
-            } else {
-                System.out.println("Warning: Could not find data start row for employee: " + block.employeeId);
-            }
+            // CORRECTED ROW OFFSETS based on Excel structure:
+            // Row empCodeRowIndex + 0: Empcode row
+            // Row empCodeRowIndex + 1: Day numbers (1,2,3...)
+            // Row empCodeRowIndex + 2: Weekday names (Mon, Tue, Wed...)
+            // Row empCodeRowIndex + 3: IN times
+            // Row empCodeRowIndex + 4: OUT times
+            // Row empCodeRowIndex + 5: WORK hours
+            // Row empCodeRowIndex + 6: Break
+            // Row empCodeRowIndex + 7: OT
+            // Row empCodeRowIndex + 8: Status
 
-        } catch (Exception e) {
-            System.err.println("Error parsing employee block at row " + startRow + ": " + e.getMessage());
-            e.printStackTrace();
-        }
+            int dayNumbersRowIndex = empCodeRowIndex + 1;  // FIXED: +1 instead of +2
+            int inTimesRowIndex = empCodeRowIndex + 3;     // FIXED: +3 instead of +4
+            int outTimesRowIndex = empCodeRowIndex + 4;    // FIXED: +4 instead of +5
+            int statusRowIndex = empCodeRowIndex + 8;      // FIXED: +8 instead of +9
 
-        return block;
-    }
+            Row dayNumbersRow = sheet.getRow(dayNumbersRowIndex);
+            Row inTimesRow = sheet.getRow(inTimesRowIndex);
+            Row outTimesRow = sheet.getRow(outTimesRowIndex);
+            Row statusRow = sheet.getRow(statusRowIndex);
 
-    /**
-     * Find the row where day columns start (1,2,3...31)
-     */
-    private int findDataStartRow(Sheet sheet, int startRow, FormulaEvaluator evaluator) {
-        // Look within 20 rows after startRow
-        for (int i = startRow + 2; i <= startRow + 20 && i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            if (row == null) continue;
-
-            // Check column B (index 1) for day number "1"
-            Cell cellB = row.getCell(1);
-            if (cellB != null) {
-                String val = getCellValue(cellB, evaluator);
-                if (val != null && val.equals("1")) {
-                    System.out.println("Found data start row at: " + i);
-                    return i;
-                }
-            }
-
-            // Also check column C (index 2) if B doesn't have "1"
-            Cell cellC = row.getCell(2);
-            if (cellC != null) {
-                String val = getCellValue(cellC, evaluator);
-                if (val != null && val.equals("1")) {
-                    System.out.println("Found data start row at: " + i);
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Find the starting column where day numbers begin
-     */
-    private int findStartColumn(Row dayRow, FormulaEvaluator evaluator) {
-        for (int col = 0; col <= 10; col++) {
-            Cell cell = dayRow.getCell(col);
-            if (cell != null) {
-                String val = getCellValue(cell, evaluator);
-                if (val != null && val.equals("1")) {
-                    return col;
-                }
-            }
-        }
-        return 1; // Default to column B (index 1)
-    }
-
-    /**
-     * Parse daily IN/OUT times and status for an employee
-     */
-    private List<EmployeeAttendance> parseDailyData(Sheet sheet, int dataStartRow,
-                                                    EmployeeBlock block,
-                                                    FormulaEvaluator evaluator,
-                                                    YearMonth yearMonth) {
-        List<EmployeeAttendance> attendances = new ArrayList<>();
-
-        try {
-            Row dayNumbersRow = sheet.getRow(dataStartRow);      // Day numbers (1-31)
-            Row inTimesRow = sheet.getRow(dataStartRow + 2);     // IN times
-            Row outTimesRow = sheet.getRow(dataStartRow + 3);    // OUT times
-            Row statusRow = sheet.getRow(dataStartRow + 7);      // Status row
+            System.out.println("Day numbers row index: " + dayNumbersRowIndex);
+            System.out.println("IN times row index: " + inTimesRowIndex);
+            System.out.println("OUT times row index: " + outTimesRowIndex);
+            System.out.println("Status row index: " + statusRowIndex);
 
             if (dayNumbersRow == null) {
-                System.out.println("Day numbers row is null at row: " + dataStartRow);
-                return attendances;
-            }
-
-            // Try to find status row if not found at expected offset
-            if (statusRow == null) {
-                // Try alternative offsets
-                for (int offset = 5; offset <= 8; offset++) {
-                    Row testRow = sheet.getRow(dataStartRow + offset);
-                    if (testRow != null) {
-                        String testVal = getCellValue(testRow.getCell(0), evaluator);
-                        if ("Status".equalsIgnoreCase(testVal)) {
-                            statusRow = testRow;
-                            System.out.println("Found Status row at offset +" + offset);
-                            break;
-                        }
-                    }
-                }
+                System.out.println("Day numbers row not found at index: " + dayNumbersRowIndex);
+                return block;
             }
 
             if (statusRow == null) {
-                System.out.println("Could not find Status row for employee: " + block.employeeId);
-                return attendances;
+                System.out.println("Status row not found at index: " + statusRowIndex);
+                return block;
             }
 
-            // Find the start column for day numbers
-            int startCol = findStartColumn(dayNumbersRow, evaluator);
-            System.out.println("Start column for days: " + startCol);
+            // Find where day numbers start (column containing "1")
+            int startCol = findStartColumnForDayNumbers(dayNumbersRow, evaluator);
+            if (startCol == -1) {
+                System.out.println("Could not find day numbers starting column");
+                return block;
+            }
 
-            // Process each day of the month
-            for (int day = 1; day <= yearMonth.lengthOfMonth(); day++) {
+            System.out.println("Day numbers start at column: " + startCol);
+
+            // Debug: Print first few day numbers (should be 1,2,3,4,5...)
+            for (int i = 0; i < 5; i++) {
+                String dayVal = getCellValue(dayNumbersRow.getCell(startCol + i), evaluator);
+                System.out.println("Day " + (i+1) + " column value: " + dayVal);
+            }
+
+            // Parse each day of the month
+            int daysInMonth = yearMonth.lengthOfMonth();
+            int parsedCount = 0;
+
+            for (int day = 1; day <= daysInMonth; day++) {
                 int colIndex = startCol + (day - 1);
 
-                // Get day number to verify
+                // Verify this column contains the correct day number
                 String dayNumberStr = getCellValue(dayNumbersRow.getCell(colIndex), evaluator);
                 if (dayNumberStr == null || dayNumberStr.isEmpty()) {
                     continue;
@@ -253,8 +180,7 @@ public class EtimeOfficeExcelParser {
                 try {
                     int dayNum = Integer.parseInt(dayNumberStr.trim());
                     if (dayNum != day) {
-                        // Try to find correct column for this day
-                        colIndex = findColumnIndexForDay(dayNumbersRow, day, evaluator, startCol);
+                        colIndex = findColumnForDay(dayNumbersRow, day, evaluator, startCol);
                         if (colIndex == -1) {
                             continue;
                         }
@@ -265,12 +191,11 @@ public class EtimeOfficeExcelParser {
 
                 LocalDate date = yearMonth.atDay(day);
 
-                // Get status for this day
+                // Get status
                 String status = getCellValue(statusRow.getCell(colIndex), evaluator);
                 if (status == null || status.isEmpty()) {
                     continue;
                 }
-
                 status = status.trim().toUpperCase();
 
                 // Get IN and OUT times
@@ -278,34 +203,46 @@ public class EtimeOfficeExcelParser {
                 String outTimeStr = normalizeTime(getCellValue(outTimesRow.getCell(colIndex), evaluator));
 
                 // Create attendance record
-                EmployeeAttendance attendance = createAttendanceRecordForDay(
+                EmployeeAttendance attendance = createAttendanceRecord(
                         block, date, inTimeStr, outTimeStr, status
                 );
 
-                attendances.add(attendance);
+                block.attendances.add(attendance);
+                parsedCount++;
             }
 
-            System.out.println("Parsed " + attendances.size() + " attendance records for employee: " + block.employeeId);
+            System.out.println("Parsed " + parsedCount + " records for employee: " + block.employeeId);
 
         } catch (Exception e) {
-            System.err.println("Error parsing daily data for employee " + block.employeeId + ": " + e.getMessage());
+            System.err.println("Error parsing employee block: " + e.getMessage());
             e.printStackTrace();
         }
 
-        return attendances;
+        return block;
     }
 
-    /**
-     * Find which column index contains the specified day number
-     */
-    private int findColumnIndexForDay(Row dayRow, int targetDay, FormulaEvaluator evaluator, int startCol) {
-        for (int col = startCol; col <= 33; col++) {
+    private int findStartColumnForDayNumbers(Row dayNumbersRow, FormulaEvaluator evaluator) {
+        // Look for cell containing "1" in columns 1-10 (B to K)
+        for (int col = 1; col <= 10; col++) {
+            Cell cell = dayNumbersRow.getCell(col);
+            if (cell != null) {
+                String val = getCellValue(cell, evaluator);
+                if (val != null && val.trim().equals("1")) {
+                    return col;
+                }
+            }
+        }
+        return 1;
+    }
+
+    private int findColumnForDay(Row dayRow, int targetDay, FormulaEvaluator evaluator, int startCol) {
+        for (int col = startCol; col <= 35; col++) {
             Cell cell = dayRow.getCell(col);
             if (cell != null) {
-                String cellValue = getCellValue(cell, evaluator);
-                if (cellValue != null && !cellValue.isEmpty()) {
+                String val = getCellValue(cell, evaluator);
+                if (val != null && !val.isEmpty()) {
                     try {
-                        int dayNum = Integer.parseInt(cellValue.trim());
+                        int dayNum = Integer.parseInt(val.trim());
                         if (dayNum == targetDay) {
                             return col;
                         }
@@ -318,30 +255,24 @@ public class EtimeOfficeExcelParser {
         return -1;
     }
 
-    /**
-     * Create EmployeeAttendance record for a specific day
-     */
-    private EmployeeAttendance createAttendanceRecordForDay(EmployeeBlock block, LocalDate date,
-                                                            String inTimeStr, String outTimeStr,
-                                                            String statusCode) {
+    private EmployeeAttendance createAttendanceRecord(EmployeeBlock block, LocalDate date,
+                                                      String inTimeStr, String outTimeStr,
+                                                      String statusCode) {
         EmployeeAttendance attendance = new EmployeeAttendance();
         attendance.setEmployeeId(block.employeeId);
         attendance.setEmployeeName(block.employeeName);
         attendance.setDate(date);
         attendance.setShift("Day");
 
-        // Set default values
         attendance.setLateIn("0:00");
         attendance.setErlOut("0:00");
         attendance.setOverTime("0:00");
 
-        // Parse times
         LocalTime inTime = parseTime(inTimeStr);
         LocalTime outTime = parseTime(outTimeStr);
         attendance.setInTime(inTime);
         attendance.setOutTime(outTime);
 
-        // Calculate work hours
         double workHours = 0.0;
         if (inTime != null && outTime != null) {
             try {
@@ -353,7 +284,6 @@ public class EtimeOfficeExcelParser {
         }
         attendance.setWorkHours(workHours);
 
-        // Map status code to AttendanceStatus
         AttendanceStatus attendanceStatus = mapStatusToEnum(statusCode);
         attendance.setStatus(attendanceStatus);
         attendance.setRemark(mapStatusToRemark(statusCode));
@@ -367,18 +297,14 @@ public class EtimeOfficeExcelParser {
 
         switch (status.toUpperCase()) {
             case "P":
-            case "PRESENT":
                 return AttendanceStatus.PRESENT;
             case "WO":
-                return AttendanceStatus.PRESENT; // Work from Office - considered present
+                return AttendanceStatus.WEEK_OFF;
             case "A":
-            case "ABSENT":
                 return AttendanceStatus.ABSENT;
             case "HL":
-            case "HALF_DAY":
                 return AttendanceStatus.HALF_DAY;
             case "LV":
-            case "LEAVE":
                 return AttendanceStatus.LEAVE;
             default:
                 return AttendanceStatus.ABSENT;
@@ -389,48 +315,19 @@ public class EtimeOfficeExcelParser {
         if (status == null) return "";
 
         switch (status.toUpperCase()) {
-            case "P": return "Present";
-            case "A": return "Absent";
-            case "WO": return "Work from Office";
-            case "HL": return "Half Day";
-            case "LV": return "Leave";
-            default: return status;
+            case "P":
+                return "Present";
+            case "A":
+                return "Absent";
+            case "WO":
+                return "Week Off";
+            case "HL":
+                return "Half Day";
+            case "LV":
+                return "Leave";
+            default:
+                return status;
         }
-    }
-
-    private String extractMonthYear(Sheet sheet, FormulaEvaluator evaluator) {
-        for (int i = 0; i <= Math.min(30, sheet.getLastRowNum()); i++) {
-            Row row = sheet.getRow(i);
-            if (row == null) continue;
-
-            for (int col = 0; col <= 30; col++) {
-                String cellValue = getCellValue(row.getCell(col), evaluator);
-                if (cellValue != null && cellValue.contains("Report Month")) {
-                    String monthValue = getCellValue(row.getCell(col + 3), evaluator);
-                    if (monthValue != null && !monthValue.isEmpty()) {
-                        System.out.println("Found Report Month: " + monthValue);
-                        return monthValue;
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i <= Math.min(30, sheet.getLastRowNum()); i++) {
-            Row row = sheet.getRow(i);
-            if (row == null) continue;
-
-            for (int col = 0; col <= 20; col++) {
-                String cellValue = getCellValue(row.getCell(col), evaluator);
-                if (cellValue != null && cellValue.matches("\\w+-\\d{4}")) {
-                    System.out.println("Found month-year pattern: " + cellValue);
-                    return cellValue;
-                }
-            }
-        }
-
-        String defaultMonth = YearMonth.now().format(DateTimeFormatter.ofPattern("MMMM-yyyy", Locale.ENGLISH));
-        System.out.println("Using default month: " + defaultMonth);
-        return defaultMonth;
     }
 
     private YearMonth parseMonthYear(String monthYear) {
@@ -468,7 +365,9 @@ public class EtimeOfficeExcelParser {
                 String[] parts = time.split(":");
                 int hours = Integer.parseInt(parts[0]);
                 int minutes = Integer.parseInt(parts[1]);
-                return LocalTime.of(hours, minutes);
+                if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+                    return LocalTime.of(hours, minutes);
+                }
             }
             return LocalTime.parse(time, TIME_FORMATTER);
         } catch (Exception e) {
@@ -492,9 +391,7 @@ public class EtimeOfficeExcelParser {
                     }
                 }
                 double numValue = cell.getNumericCellValue();
-                // Handle Excel time values (fraction of day)
                 if (numValue < 1 && numValue > 0) {
-                    // Convert Excel time to HH:MM format
                     int totalSeconds = (int) (numValue * 24 * 3600);
                     int hours = totalSeconds / 3600;
                     int minutes = (totalSeconds % 3600) / 60;
@@ -529,44 +426,6 @@ public class EtimeOfficeExcelParser {
         }
     }
 
-    /**
-     * Debug method to print Excel structure
-     */
-    public void debugExcelStructure(MultipartFile file) throws Exception {
-        try (InputStream inputStream = file.getInputStream();
-             Workbook workbook = WorkbookFactory.create(inputStream)) {
-
-            Sheet sheet = workbook.getSheetAt(0);
-            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
-
-            System.out.println("\n=== DEBUG: Excel Structure ===");
-            System.out.println("Sheet name: " + sheet.getSheetName());
-            System.out.println("Total rows: " + sheet.getLastRowNum());
-
-            for (int i = 0; i <= Math.min(50, sheet.getLastRowNum()); i++) {
-                Row row = sheet.getRow(i);
-                if (row != null) {
-                    System.out.print("Row " + i + ": ");
-                    boolean hasData = false;
-                    for (int j = 0; j <= 15; j++) {
-                        String val = getCellValue(row.getCell(j), evaluator);
-                        if (val != null && !val.isEmpty()) {
-                            System.out.print("[" + j + ":" + val + "] ");
-                            hasData = true;
-                        }
-                    }
-                    if (hasData) {
-                        System.out.println();
-                    }
-                }
-            }
-            System.out.println("=== End Debug ===\n");
-        }
-    }
-
-    /**
-     * Inner class to hold employee block data
-     */
     private static class EmployeeBlock {
         String employeeId;
         String employeeName;

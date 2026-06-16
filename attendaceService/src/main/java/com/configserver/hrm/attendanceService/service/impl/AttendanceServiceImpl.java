@@ -260,17 +260,27 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     public List<Map<String, Object>> getEmployeesFromAttendance() {
-        List<EmployeeAttendance> attendanceList = importDailyAttendanceFromEtimeOffice();
+        List<EmployeeAttendance> attendanceList = repository.findAll();
         List<Map<String, Object>> employees = new ArrayList<>();
 
+        // Use a set to avoid duplicate employees
+        Set<String> addedEmployees = new HashSet<>();
+
         for (EmployeeAttendance attendance : attendanceList) {
-            Map<String, Object> empData = new HashMap<>();
-            empData.put("employeeId", attendance.getEmployeeId());
-            empData.put("name", attendance.getEmployeeName());
-            // fetch email from your config
-            String email = employeeEmailConfig.getEmailByEmployeeId(attendance.getEmployeeId());
-            empData.put("email", email);
-            employees.add(empData);
+            if (!addedEmployees.contains(attendance.getEmployeeId())) {
+                Map<String, Object> empData = new HashMap<>();
+                empData.put("employeeId", attendance.getEmployeeId());
+                empData.put("name", attendance.getEmployeeName());
+                // fetch email from your config
+                try {
+                    String email = employeeEmailConfig.getEmailByEmployeeId(attendance.getEmployeeId());
+                    empData.put("email", email);
+                } catch (Exception e) {
+                    empData.put("email", "");
+                }
+                employees.add(empData);
+                addedEmployees.add(attendance.getEmployeeId());
+            }
         }
         return employees;
     }

@@ -1,7 +1,6 @@
 package com.configserver.hrm.attendanceService.controller;
 
 import com.configserver.hrm.attendanceService.dto.AttendanceRequestDTO;
-import com.configserver.hrm.attendanceService.dto.AttendanceSummaryDTO;
 import com.configserver.hrm.attendanceService.dto.DailySummaryDTO;
 import com.configserver.hrm.attendanceService.entity.EmployeeAttendance;
 import com.configserver.hrm.attendanceService.repository.EmployeeAttendanceRepository;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -35,6 +33,9 @@ public class AttendanceController {
 
     @Autowired
     private EmployeeAttendanceRepository repository;
+
+    @Autowired
+    private LocalFileImportService localFileImportService;
 
     // ✅ Manual import (POST JSON body with validation)
     @PostMapping("/import")
@@ -143,6 +144,24 @@ public class AttendanceController {
 
         return ResponseEntity.ok(attendanceService.getPresentAbsentSummary(date));
     }
+
+    /*
+        Get data for Attendance Management - Current
+    */
+    @GetMapping("/daily/{date}")
+    public ResponseEntity<List<EmployeeAttendance>> getDailyAttendance(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<EmployeeAttendance> records = attendanceService.getDailyAttendance(date);
+        return ResponseEntity.ok(records != null ? records : Collections.emptyList());
+    }
+
+    @GetMapping("/date/{date}")
+    public ResponseEntity<List<EmployeeAttendance>> getAttendanceByDate(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<EmployeeAttendance> records = attendanceService.getDailyAttendance(date);
+        return ResponseEntity.ok(records != null ? records : Collections.emptyList());
+    }
+
     @PostMapping("/import/smart-monthly/{monthYear}")
     public ResponseEntity<List<EmployeeAttendance>> smartMonthlyImport(
             @PathVariable String monthYear,
@@ -286,9 +305,6 @@ public class AttendanceController {
         }
     }
 
-
-    @Autowired
-    private LocalFileImportService localFileImportService;
 
     /**
      * Import from local file path (calls the existing API internally)
