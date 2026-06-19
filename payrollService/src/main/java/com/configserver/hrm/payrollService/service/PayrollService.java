@@ -21,10 +21,15 @@ public interface PayrollService {
     List<AnnualSalaryStructureDTO> getAllAnnualStructures();
 
     // NEW: PDF Generation methods
+//  byte[] generatePayslipPdf(Long payslipId) throws DocumentException;
+//   byte[] generatePayslipPdf(Long employeeId, int month, int year) throws DocumentException;
+//    double calculateTotalPayroll(int month, int year);
+//    long countAllPayslips();
+//    long countPayslipsByMonth(int month, int year);
+
     byte[] generatePayslipPdf(Long payslipId) throws DocumentException;
-    byte[] generatePayslipPdf(Long employeeId, int month, int year) throws DocumentException;
+    byte[] generatePayslipPdf(Long employeeId, int month, int year, String authHeader) throws DocumentException;
     double calculateTotalPayroll(int month, int year);
     long countAllPayslips();
     long countPayslipsByMonth(int month, int year);
-
 }

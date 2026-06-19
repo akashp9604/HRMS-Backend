@@ -23,6 +23,7 @@ public class EmployeeClient {
      * GET {employee.service.url}/{employeeId}/package
      */
     public Map<String, Object> getEmployeePackage(Long employeeId, String authHeader) {
+        System.out.println("AUTH HEADER = " + authHeader);
         String url = baseUrl + "/" + employeeId + "/package";
 
         HttpHeaders headers = new HttpHeaders();

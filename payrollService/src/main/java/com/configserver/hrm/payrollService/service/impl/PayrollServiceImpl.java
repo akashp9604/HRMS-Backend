@@ -224,6 +224,8 @@ public class PayrollServiceImpl implements PayrollService {
     @Override
     @Transactional
     public PayslipDTO generatePayslip(Long employeeId, int month, int year, String authHeader) {
+        System.out.println("AUTH HEADER IN generatePayslip = " + authHeader);
+
         try {
             // 1️⃣ Fetch Employee details dynamically
             Map<String, Object> empDetails = employeeClient.getEmployeeDetails(employeeId, authHeader);
@@ -428,15 +430,31 @@ public class PayrollServiceImpl implements PayrollService {
     }
 
 
-    @Override
-    public byte[] generatePayslipPdf(Long employeeId, int month, int year) throws DocumentException {
-        // fetch payslip details
-        PayslipDTO payslip = generatePayslip(employeeId, month, year, null);
+//   // @Override
+//    public byte[] generatePayslipPdf(Long employeeId, int month, int year) throws DocumentException {
+//        // fetch payslip details
+//        PayslipDTO payslip = generatePayslip(employeeId, month, year, null);
+//
+//        // call your PdfGenerationService or iText logic
+//        return pdfGenerationService.generatePayslipPdf(payslip);
+//    }
 
-        // call your PdfGenerationService or iText logic
+    @Override
+    public byte[] generatePayslipPdf(
+            Long employeeId,
+            int month,
+            int year,
+            String authHeader
+    ) throws DocumentException {
+
+        System.out.println("PDF Method Called");
+        System.out.println("AUTH HEADER = " + authHeader);
+
+        PayslipDTO payslip =
+                generatePayslip(employeeId, month, year, authHeader);
+
         return pdfGenerationService.generatePayslipPdf(payslip);
     }
-
 
 
     // ==================== HELPER METHODS ====================

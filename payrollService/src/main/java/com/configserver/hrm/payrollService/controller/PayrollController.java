@@ -120,10 +120,12 @@ public class PayrollController {
                 "totalPayroll", total
         );
     }
+
     @GetMapping("/payslip/count")
     public long getTotalPayslipCount() {
         return payrollService.countAllPayslips();
     }
+
     @GetMapping("/payslip/count/by-month")
     public long getPayslipCountByMonth(
             @RequestParam int month,
@@ -131,47 +133,48 @@ public class PayrollController {
         return payrollService.countPayslipsByMonth(month, year);
     }
 
-   /* @GetMapping("/download-template-payslip")
-    public ResponseEntity<byte[]> downloadTemplatePayslip(
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+    /* @GetMapping("/download-template-payslip")
+     public ResponseEntity<byte[]> downloadTemplatePayslip(
+             @RequestHeader(value = "Authorization", required = false) String authHeader,
+             @RequestParam Long employeeId,
+             @RequestParam int month,
+             @RequestParam int year) {
+         try {
+             byte[] pdfBytes = payslipGeneratorService.generatePayslipPdf(employeeId.toString(), month, year, authHeader);
+
+             HttpHeaders headers = new HttpHeaders();
+             headers.setContentType(MediaType.APPLICATION_PDF);
+             String filename = String.format("Payslip_Template_%s_%d_%d.pdf", employeeId, month, year);
+             headers.setContentDispositionFormData("attachment", filename);
+
+             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+         } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                     .body(("Error generating payslip: " + e.getMessage()).getBytes());
+         }
+     }
+
+ */
+    @GetMapping("/download-payslip/by-month")
+    public ResponseEntity<byte[]> downloadPayslipByMonth(
             @RequestParam Long employeeId,
             @RequestParam int month,
-            @RequestParam int year) {
+            @RequestParam int year,
+            @RequestHeader("Authorization") String authHeader) {
         try {
-            byte[] pdfBytes = payslipGeneratorService.generatePayslipPdf(employeeId.toString(), month, year, authHeader);
+            byte[] pdfBytes = payrollService.generatePayslipPdf(employeeId, month, year, authHeader);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
-            String filename = String.format("Payslip_Template_%s_%d_%d.pdf", employeeId, month, year);
+            String filename = String.format("Payslip_%s_%d_%d.pdf", employeeId, month, year);
             headers.setContentDispositionFormData("attachment", filename);
 
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(("Error generating payslip: " + e.getMessage()).getBytes());
         }
     }
-
-*/
-   @GetMapping("/download-payslip/by-month")
-   public ResponseEntity<byte[]> downloadPayslipByMonth(
-           @RequestParam Long employeeId,
-           @RequestParam int month,
-           @RequestParam int year) {
-       try {
-           byte[] pdfBytes = payrollService.generatePayslipPdf(employeeId, month, year);
-
-           HttpHeaders headers = new HttpHeaders();
-           headers.setContentType(MediaType.APPLICATION_PDF);
-           String filename = String.format("Payslip_%s_%d_%d.pdf", employeeId, month, year);
-           headers.setContentDispositionFormData("attachment", filename);
-
-           return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-       } catch (Exception e) {
-           e.printStackTrace();
-           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                   .body(("Error generating payslip: " + e.getMessage()).getBytes());
-       }
-   }
-
 }
+
