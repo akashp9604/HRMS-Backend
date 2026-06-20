@@ -5,10 +5,13 @@ import com.configserver.hrm.mappingService.dto.EmployeeDTO;
 import com.configserver.hrm.mappingService.dto.EmployeeIdMappingResponse;
 import com.configserver.hrm.mappingService.entity.EmployeeIdMapping;
 import com.configserver.hrm.mappingService.repository.EmployeeIdMappingRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -27,6 +30,20 @@ public class EmployeeIdMappingService {
 
     @Autowired
     private EmployeeIdMappingRepository employeeIdMappingRepository;
+
+    // ✅ Helper method to extract JWT token from current request
+    private String getJwtTokenFromContext() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes != null) {
+            HttpServletRequest request = attributes.getRequest();
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                return authHeader.substring(7); // Remove "Bearer " prefix
+            }
+        }
+        // If no token found in context, throw exception
+        throw new RuntimeException("No JWT token found in request context. Please ensure you're passing Authorization header.");
+    }
 
     // ========================
     // Create or update mapping
@@ -227,14 +244,13 @@ public class EmployeeIdMappingService {
     }*/
     public List<EmployeeIdMapping> syncAllEmployeesFromEmployeeService() {
         String url = "http://localhost:8088/api/employees";
-        String username = "borkarpranit@gmail.com";
-        String password = "uf5pdhdP";
-        String auth = username + ":" + password;
-        byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes());
-        String authHeader = "Basic " + new String(encodedAuth);
+
+        // ✅ Get JWT token from request context
+        String jwtToken = getJwtTokenFromContext();
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", authHeader);
+        headers.set("Authorization", "Bearer " + jwtToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<EmployeeDTO[]> response = restTemplate.exchange(
@@ -283,8 +299,7 @@ public class EmployeeIdMappingService {
 
 
     public List<EmployeeIdMapping> syncAttendanceWithMapping() {
-        String attendanceUrl = "http://localhost:8085/api/attendance/employees-info";
-
+        String attendanceUrl = "http://localhost:8094/api/attendance/employees-info";
         ResponseEntity<List> response = restTemplate.getForEntity(attendanceUrl, List.class);
         List<Map<String, Object>> attendanceData = response.getBody();
 

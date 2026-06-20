@@ -13,7 +13,7 @@ public class AutoImportOnStartupRunner implements CommandLineRunner {
     @Autowired
     private LocalFileImportService localFileImportService;
 
-    private static final String FILE_PATH = "E:\\HRMS\\HRMS-BACKEND\\attendaceService\\src\\monthperformance01062026185649.xls";
+    private static final String FILE_PATH = "F:\\ConfigServerLlp\\HRMS-Backend\\attendaceService\\src\\monthperformance01062026185649.xls";
     private static final boolean IMPORT_ON_STARTUP = true; // Set to false to disable
 
     @Override

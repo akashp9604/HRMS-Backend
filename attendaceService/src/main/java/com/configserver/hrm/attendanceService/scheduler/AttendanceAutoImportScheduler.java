@@ -7,7 +7,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @Component
@@ -17,12 +16,12 @@ public class AttendanceAutoImportScheduler {
     @Autowired
     private LocalFileImportService localFileImportService;
 
-    private static final String FILE_PATH = "E:\\HRMS\\HRMS-BACKEND\\attendaceService\\src\\monthperformance01062026185649.xls";
+    private static final String FILE_PATH = "F:\\ConfigServerLlp\\HRMS-Backend\\attendaceService\\src\\monthperformance01062026185649.xls";
     private static final boolean ENABLED = true;
 
-    // Run every day at 12:00 AM
-    @Scheduled(cron = "0 0 12 * * *")
-    public void importAt12AM() {
+    // Run every day at 10:00 AM
+    @Scheduled(cron = "0 0 10 * * *")
+    public void importAt10AM() {
         if (!ENABLED) return;
 
         System.out.println("=== Scheduled import started at: " + LocalDateTime.now() + " ===");

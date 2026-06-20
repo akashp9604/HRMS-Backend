@@ -155,13 +155,6 @@ public class AttendanceController {
         return ResponseEntity.ok(records != null ? records : Collections.emptyList());
     }
 
-    @GetMapping("/date/{date}")
-    public ResponseEntity<List<EmployeeAttendance>> getAttendanceByDate(
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        List<EmployeeAttendance> records = attendanceService.getDailyAttendance(date);
-        return ResponseEntity.ok(records != null ? records : Collections.emptyList());
-    }
-
     @PostMapping("/import/smart-monthly/{monthYear}")
     public ResponseEntity<List<EmployeeAttendance>> smartMonthlyImport(
             @PathVariable String monthYear,
@@ -320,31 +313,10 @@ public class AttendanceController {
             System.out.println("=== Importing from local file path ===");
             System.out.println("File path: " + filePath);
 
-            // Method 1: Using RestTemplate (calls your existing API)
-            // Map<String, Object> result = localFileImportService.importViaRestTemplate(filePath, sourceType);
-
-            // Method 2: Direct call (recommended - no HTTP overhead)
             Map<String, Object> result = localFileImportService.importDirectly(filePath, sourceType);
 
             return ResponseEntity.ok(result);
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    /**
-     * Quick import using default file path
-     */
-    @PostMapping("/import/auto")
-    public ResponseEntity<?> autoImport() {
-        String defaultPath = "F:/ConfigServerLlp/HRMS-Backend/attendaceService/src/monthperformance01062026185649.xls";
-
-        try {
-            Map<String, Object> result = localFileImportService.importDirectly(defaultPath, "ETIME_MONTHLY");
-            return ResponseEntity.ok(result);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

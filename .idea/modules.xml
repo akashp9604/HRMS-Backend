@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/HRMS-BACKEND.iml" filepath="$PROJECT_DIR$/.idea/HRMS-BACKEND.iml" />
-      <module fileurl="file://$PROJECT_DIR$/leaveService/leaveService.iml" filepath="$PROJECT_DIR$/leaveService/leaveService.iml" />
     </modules>
   </component>
 </project>
