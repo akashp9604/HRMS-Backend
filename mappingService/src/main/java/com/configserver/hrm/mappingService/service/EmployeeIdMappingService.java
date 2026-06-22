@@ -5,6 +5,8 @@ import com.configserver.hrm.mappingService.dto.EmployeeDTO;
 import com.configserver.hrm.mappingService.dto.EmployeeIdMappingResponse;
 import com.configserver.hrm.mappingService.entity.EmployeeIdMapping;
 import com.configserver.hrm.mappingService.repository.EmployeeIdMappingRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -15,6 +17,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Service
 public class EmployeeIdMappingService {
@@ -106,7 +111,7 @@ public class EmployeeIdMappingService {
         // ✅ Auto-fetch email from Employee Service if null or empty
         if ((employeeEmail == null || employeeEmail.isEmpty()) && employeeServiceUuid != null) {
             try {
-                String employeeApiUrl = "http://localhost:8088/api/employees/" + employeeServiceUuid;
+                String employeeApiUrl = "http://localhost:8081/api/users/" + employeeServiceUuid;
                 ResponseEntity<EmployeeDTO> response = restTemplate.getForEntity(employeeApiUrl, EmployeeDTO.class);
                 if (response.getBody() != null && response.getBody().getEmail() != null) {
                     employeeEmail = response.getBody().getEmail();
@@ -243,59 +248,107 @@ public class EmployeeIdMappingService {
         return syncedEmployees;
     }*/
     public List<EmployeeIdMapping> syncAllEmployeesFromEmployeeService() {
-        String url = "http://localhost:8088/api/employees";
+        try {
+            String url = "http://localhost:8081/api/users";
+            String jwtToken = getJwtTokenFromContext();
 
-        // ✅ Get JWT token from request context
-        String jwtToken = getJwtTokenFromContext();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + jwtToken);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + jwtToken);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
+            // ✅ Get response as String first
+            ResponseEntity<String> rawResponse = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
 
-        ResponseEntity<EmployeeDTO[]> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                EmployeeDTO[].class
-        );
+            // ✅ Parse and extract employees
+            List<EmployeeDTO> employees = extractEmployees(rawResponse.getBody());
 
-        EmployeeDTO[] employees = response.getBody();
-        List<EmployeeIdMapping> syncedEmployees = new ArrayList<>();
+            // ✅ Process using streams
+            return employees.stream()
+                    .filter(emp -> emp.getId() != null)
+                    .map(this::syncEmployee)
+                    .collect(Collectors.toList());
 
-        if (employees != null) {
-            for (EmployeeDTO emp : employees) {
-                if (emp.getId() == null) continue; // ✅ only null check
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
 
-                String empIdStr = emp.getId().toString(); // ✅ convert UUID to String
+    private List<EmployeeDTO> extractEmployees(String responseBody) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(responseBody);
 
-                Optional<EmployeeIdMapping> existing = repository.findByEmployeeServiceUuid(empIdStr);
-                EmployeeIdMapping mapping;
+        // ✅ Find array node
+        JsonNode employeesNode = findEmployeeArray(root);
 
-                if (existing.isEmpty()) {
-                    mapping = new EmployeeIdMapping();
-                    mapping.setEmployeeServiceUuid(empIdStr);
-                    mapping.setEmployeeName(emp.getName() != null ? emp.getName() : "Unknown");
-                    mapping.setEmployeeEmail(emp.getEmail()); // ✅ set email
-                    mapping.setLeaveEmpUuid(empIdStr);
-                    mapping.setPayrollEmpUuid(empIdStr);
-                    mapping.setAttendanceEmpId(null);
-                    mapping.setAnnualStructureId(null);
-                } else {
-                    mapping = existing.get();
-                    // ✅ update email if changed
-                    mapping.setEmployeeEmail(emp.getEmail());
-                    mapping.setEmployeeName(emp.getName());
+        if (employeesNode == null || employeesNode.isMissingNode()) {
+            return new ArrayList<>();
+        }
+
+        EmployeeDTO[] employees = mapper.treeToValue(employeesNode, EmployeeDTO[].class);
+        return Arrays.asList(employees);
+    }
+
+    private JsonNode findEmployeeArray(JsonNode root) {
+        // ✅ If root itself is an array
+        if (root.isArray()) {
+            return root;
+        }
+
+        // ✅ Check common wrapper fields
+        String[] fieldNames = {"content", "data", "employees", "results", "list"};
+
+        for (String fieldName : fieldNames) {
+            if (root.has(fieldName)) {
+                JsonNode node = root.get(fieldName);
+                if (node.isArray()) {
+                    return node;
                 }
-
-                repository.save(mapping);
-                syncedEmployees.add(mapping);
             }
         }
 
-        return syncedEmployees;
+        // ✅ If not found in common fields, iterate through all fields
+        Iterator<Map.Entry<String, JsonNode>> fields = root.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            if (field.getValue().isArray()) {
+                return field.getValue();
+            }
+        }
+
+        return null;
     }
 
+    private EmployeeIdMapping syncEmployee(EmployeeDTO emp) {
+        String empIdStr = emp.getId().toString();
+
+        EmployeeIdMapping mapping = repository
+                .findByEmployeeServiceUuid(empIdStr)
+                .map(existing -> {
+                    existing.setEmployeeEmail(emp.getEmail());
+                    existing.setEmployeeName(emp.getName());
+                    return existing;
+                })
+                .orElseGet(() -> {
+                    EmployeeIdMapping newMapping = new EmployeeIdMapping();
+                    newMapping.setEmployeeServiceUuid(empIdStr);
+                    newMapping.setEmployeeName(emp.getName() != null ? emp.getName() : "Unknown");
+                    newMapping.setEmployeeEmail(emp.getEmail());
+                    newMapping.setLeaveEmpUuid(empIdStr);
+                    newMapping.setPayrollEmpUuid(empIdStr);
+                    newMapping.setAttendanceEmpId(null);
+                    newMapping.setAnnualStructureId(null);
+                    return newMapping;
+                });
+
+        return repository.save(mapping);
+    }
 
 
     public List<EmployeeIdMapping> syncAttendanceWithMapping() {
